@@ -1,0 +1,30 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class Bride extends Model
+{
+    protected $fillable = [
+        'invitation_id',
+        'fullname',
+        'father',
+        'mother',
+        'instagram',
+        'photo',
+    ];
+
+    protected $appends = ['photoUrl'];
+
+    public function getPhotoUrlAttribute(): ?string
+    {
+        return $this->photo ? asset('storage/' . $this->photo) : null;
+    }
+
+    public function invitation(): BelongsTo
+    {
+        return $this->belongsTo(Invitation::class);
+    }
+}
