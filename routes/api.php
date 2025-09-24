@@ -3,8 +3,13 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\GuestController;
+use App\Http\Controllers\Api\MusicController;
+use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ThemeController;
+use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\PackageController;
+use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\GoogleOAuthController;
 use App\Http\Controllers\Api\ThemeCategoryController;
 
@@ -37,9 +42,6 @@ Route::prefix('auth')->group(function () {
         Route::get('/redirect', [GoogleOAuthController::class, 'redirectToGoogle'])->name('redirect');
         Route::get('/callback', [GoogleOAuthController::class, 'handleGoogleCallback'])->name('callback');
         Route::post('/callback', [GoogleOAuthController::class, 'handleGoogleCallback'])->name('callback.post');
-        
-        // Mobile/SPA OAuth Flow
-        Route::post('/login', [GoogleOAuthController::class, 'loginWithGoogleToken'])->name('login');
     });
 });
 
@@ -63,6 +65,27 @@ Route::prefix('themes')->group(function () {
 // Theme Categories (Public)
 Route::prefix('categories')->group(function () {
     Route::get('/', [ThemeCategoryController::class, 'index']);
+});
+
+// Musics (Public)
+Route::prefix('musics')->group(function () {
+    Route::get('/', [MusicController::class, 'index']);
+    Route::get('/{id}', [MusicController::class, 'show']);
+});
+
+// Guests (Public)
+Route::put('/guests/{id}/rsvp', [GuestController::class, 'updateAttendance']);
+Route::get('/guests/{invitationId}', [GuestController::class, 'getGuestsByInvitationId']);
+Route::get('/guest/{slug}', [GuestController::class, 'checkGuest']);
+
+// Comments (Public)
+Route::post('/comments', [CommentController::class, 'store']);
+
+// Payment Webhooks (Public)
+Route::prefix('payments')->group(function () {
+    Route::post('/notification', [PaymentController::class, 'handleNotification']);
+    Route::post('/recurring-notification', [PaymentController::class, 'handleRecurringNotification']);
+    Route::post('/account-notification', [PaymentController::class, 'handleAccountNotification']);
 });
 
 /*
@@ -120,6 +143,39 @@ Route::middleware('auth:sanctum')->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::apiResource('categories', ThemeCategoryController::class)->except(['index', 'show']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Music Management
+    |--------------------------------------------------------------------------
+    */
+    Route::apiResource('musics', MusicController::class)->except(['index', 'show']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Guest Management
+    |--------------------------------------------------------------------------
+    */
+    Route::apiResource('guests', GuestController::class)->except(['index', 'show']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Payment & Order Management
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('payments')->group(function () {
+        Route::post('/create', [PaymentController::class, 'createPayment']);
+        Route::put('/update', [PaymentController::class, 'updatePayment']);
+        Route::get('/orders', [OrderController::class, 'getUserOrders']);
+        Route::get('/orders/{orderId}', [OrderController::class, 'getOrderStatus']);
+        Route::get('/orders/{orderId}/update', [OrderController::class, 'updatePaymentStatus']);
+        Route::post('/orders/{orderId}/cancel', [OrderController::class, 'cancelOrder']);
+    });
+
+    // Orders
+    Route::get('/orders', [OrderController::class, 'getOrders']);
+    Route::get('/orders/{id}', [OrderController::class, 'show']);
+    Route::get('/order/{order_id}', [OrderController::class, 'getOrder']);
 });
 
 // Fallback route for undefined API endpoints

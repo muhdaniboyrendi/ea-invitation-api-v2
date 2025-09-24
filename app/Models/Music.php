@@ -14,7 +14,10 @@ class Music extends Model
         'thumbnail',
     ];
 
-    protected $appends = ['audioUrl', 'thumbnailUrl'];
+    protected $appends = [
+        'audio_url', 
+        'thumbnail_url'
+    ];
 
     public function getAudioUrlAttribute(): ?string
     {
