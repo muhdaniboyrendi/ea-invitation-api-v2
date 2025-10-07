@@ -11,9 +11,27 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class ThemeController extends Controller
 {
+    /**
+     * Generate sanitized filename
+     */
+    private function generateSafeFilename($file)
+    {
+        $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+        $extension = $file->getClientOriginalExtension();
+        
+        // Hapus spasi dan karakter khusus, ganti dengan dash
+        $safeName = Str::slug($originalName);
+        
+        // Tambahkan timestamp untuk uniqueness
+        $fileName = time() . '_' . $safeName . '.' . $extension;
+        
+        return $fileName;
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -53,7 +71,7 @@ class ThemeController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'theme_category_id' => 'required|exists:theme_categories,id',
-            'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'link' => 'nullable|string',
             'is_premium' => 'required|boolean'
         ]);
@@ -72,16 +90,18 @@ class ThemeController extends Controller
 
                 if ($request->hasFile('thumbnail')) {
                     $file = $request->file('thumbnail');
-                    $fileName = time() . '_' . $file->getClientOriginalName();
+                    $fileName = $this->generateSafeFilename($file);
                     $thumbnailPath = $file->storeAs('themes/thumbnails', $fileName, 'public');
                 }
+
+                $isPremium = in_array($request->is_premium, ['1', 'true', true], true);
 
                 $theme = Theme::create([
                     'name' => $request->name,
                     'theme_category_id' => $request->theme_category_id,
                     'link' => $request->link,
                     'thumbnail' => $thumbnailPath,
-                    'is_premium' => $request->is_premium
+                    'is_premium' => $isPremium
                 ]);
 
                 if ($thumbnailPath) {
@@ -149,7 +169,7 @@ class ThemeController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'theme_category_id' => 'required|exists:theme_categories,id',
-            'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'link' => 'nullable|string',
             'is_premium' => 'required|boolean'
         ]);
@@ -163,14 +183,15 @@ class ThemeController extends Controller
         }
 
         try {
-            return DB::transaction(function () use ($request, $theme) {
+            return DB::transaction(function () use ($theme, $request) {
                 if ($request->hasFile('thumbnail')) {
+                    // Delete old thumbnail
                     if ($theme->thumbnail) {
                         Storage::disk('public')->delete($theme->thumbnail);
                     }
                     
                     $file = $request->file('thumbnail');
-                    $fileName = time() . '_' . $file->getClientOriginalName();
+                    $fileName = $this->generateSafeFilename($file);
                     $thumbnailPath = $file->storeAs('themes/thumbnails', $fileName, 'public');
                     
                     $theme->thumbnail = $thumbnailPath;
