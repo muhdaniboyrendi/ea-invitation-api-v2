@@ -16,18 +16,15 @@ use Illuminate\Support\Str;
 class ThemeController extends Controller
 {
     /**
-     * Generate sanitized filename
+     * Generate sanitized filename with EA-inv prefix
      */
     private function generateSafeFilename($file)
     {
-        $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
         $extension = $file->getClientOriginalExtension();
         
-        // Hapus spasi dan karakter khusus, ganti dengan dash
-        $safeName = Str::slug($originalName);
+        $uniqueId = time() . '_' . Str::random(10);
         
-        // Tambahkan timestamp untuk uniqueness
-        $fileName = time() . '_' . $safeName . '.' . $extension;
+        $fileName = 'EA-inv_' . $uniqueId . '.' . $extension;
         
         return $fileName;
     }

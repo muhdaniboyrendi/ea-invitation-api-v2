@@ -52,8 +52,8 @@ class MusicController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'artist' => 'nullable|string|max:255',
-            'audio' => 'required|file|mimes:mp3,wav,ogg,m4a|max:51200',
-            'thumbnail' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:2048',
+            'audio' => 'required|file|mimes:mp3,wav,ogg,m4a|max:20480',
+            'thumbnail' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:5120',
         ]);
 
         if ($validator->fails()) {

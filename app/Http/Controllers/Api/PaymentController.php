@@ -39,10 +39,10 @@ class PaymentController extends Controller
 
         try {
             return DB::transaction(function () use ($user, $package) {
-                $finalPrice = $package->price;
+                $finalPrice = $package->price + 2500;
                 
                 if ($package->discount) {
-                    $finalPrice = $package->price - ($package->price * $package->discount / 100);
+                    $finalPrice = $package->price - ($package->price * $package->discount / 100) + 2500; //admin fee
                 }
 
                 do {
