@@ -175,7 +175,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Orders
     Route::get('/orders', [OrderController::class, 'getOrders']);
-    Route::get('/orders/{id}', [OrderController::class, 'show']);
+    Route::get('/orders/{orderId}', [OrderController::class, 'show']);
     Route::get('/order/{order_id}', [OrderController::class, 'getOrder']);
 });
 

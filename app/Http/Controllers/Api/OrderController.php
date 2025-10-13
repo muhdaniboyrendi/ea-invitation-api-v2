@@ -10,21 +10,31 @@ use Illuminate\Support\Facades\Auth;
 
 class OrderController extends Controller
 {
-    public function show(Order $order)
+    public function show($orderId)
     {
-        try {
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Order retrieved successfully',
-                'data' => $order
-            ]);
-        } catch (\Exception $e) {
+        $user = Auth::user();
+
+        $order = Order::where('order_id', $orderId)->first();
+
+        if (!$order) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to retrieve order',
-                'error' => config('app.debug') ? $e->getMessage() : null
-            ], 500);
+                'message' => 'Order not found'
+            ], 404);
         }
+
+        if ($order->user_id !== $user->id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Forbidden access'
+            ], 403);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Order retrieved successfully',
+            'data' => $order
+        ]);
     }
 
     public function getOrderStatus($orderId)
