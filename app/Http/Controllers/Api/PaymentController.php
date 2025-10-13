@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon;
 
 class PaymentController extends Controller
 {
@@ -42,7 +43,7 @@ class PaymentController extends Controller
                 $finalPrice = $package->price + 2500;
                 
                 if ($package->discount) {
-                    $finalPrice = $package->price - ($package->price * $package->discount / 100) + 2500; //admin fee
+                    $finalPrice = $package->price - ($package->price * $package->discount / 100) + 2500;
                 }
 
                 do {
@@ -98,7 +99,6 @@ class PaymentController extends Controller
                 ], 201);
             });
         } catch (\Exception $e) {
-            // Update payment status to canceled if order was created
             if (isset($order)) {
                 $order->update(['payment_status' => 'canceled']);
             }
@@ -158,6 +158,115 @@ class PaymentController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to retrieve payment',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
+
+    public function handlePaymentSuccess($orderId)
+    {
+        $user = Auth::user();
+
+        try {
+            return DB::transaction(function () use ($orderId, $user) {
+                $order = Order::where('order_id', $orderId)->first();
+
+                if (!$order) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Order not found'
+                    ], 404);
+                }
+            
+                if ($order->user_id !== $user->id) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Forbidden access'
+                    ], 403);
+                }
+
+                $order->update(['payment_status' => 'paid']);
+
+                // Handle post-payment logic here
+                // e.g., activate package, send email notification, etc.
+
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Payment marked as successful',
+                    'data' => $order->fresh()
+                ]);
+            });
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to handle payment success',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
+
+    public function handlePaymentCanceled($orderId)
+    {
+        $user = Auth::user();
+
+        try {
+            return DB::transaction(function () use ($orderId, $user) {
+                $order = Order::where('order_id', $orderId)->first();
+
+                if (!$order) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Order not found'
+                    ], 404);
+                }
+            
+                if ($order->user_id !== $user->id) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Forbidden access'
+                    ], 403);
+                }
+
+                $order->update(['payment_status' => 'canceled']);
+
+                // Handle post-cancellation logic here
+                // e.g., send cancellation notification, refund logic, etc.
+
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Payment marked as canceled',
+                    'data' => $order->fresh()
+                ]);
+            });
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to handle payment cancellation',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
+
+    public function expirePendingPayments()
+    {
+        try {
+            $twentyFourHoursAgo = Carbon::now()->subHours(24);
+
+            $expiredCount = Order::where('payment_status', 'pending')
+                ->where('created_at', '<=', $twentyFourHoursAgo)
+                ->update(['payment_status' => 'expired']);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Pending payments expired successfully',
+                'data' => [
+                    'expired_count' => $expiredCount
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to expire pending payments',
                 'error' => config('app.debug') ? $e->getMessage() : null
             ], 500);
         }
@@ -271,7 +380,7 @@ class PaymentController extends Controller
                 ]);
 
                 if ($paymentStatus === 'paid') {
-                    // make something
+                    // Handle post-payment logic here
                 }
 
                 return response()->json([
@@ -288,16 +397,12 @@ class PaymentController extends Controller
         }
     }
 
-    /**
-     * Handle recurring notification from Midtrans
-     */
     public function handleRecurringNotification(Request $request)
     {
         try {
             return DB::transaction(function () use ($request) {
                 $notificationBody = json_decode($request->getContent(), true);
                 
-                // Verifikasi signature seperti di handleNotification
                 $signatureKey = env('MIDTRANS_SERVER_KEY');
                 $orderId = $notificationBody['order_id'];
                 $statusCode = $notificationBody['status_code'];
@@ -311,9 +416,6 @@ class PaymentController extends Controller
                         'message' => 'Invalid signature'
                     ], 403);
                 }
-
-                // Logika untuk menangani recurring payment
-                // Mirip dengan handleNotification tetapi untuk subscription/recurring
 
                 return response()->json([
                     'status' => 'success',
@@ -329,16 +431,12 @@ class PaymentController extends Controller
         }
     }
 
-    /**
-     * Handle account notification from Midtrans
-     */
     public function handleAccountNotification(Request $request)
     {
         try {
             return DB::transaction(function () use ($request) {
                 $notificationBody = json_decode($request->getContent(), true);
                 
-                // Verifikasi signature
                 $signatureKey = env('MIDTRANS_SERVER_KEY');
                 $orderId = $notificationBody['order_id'];
                 $statusCode = $notificationBody['status_code'];
@@ -352,8 +450,6 @@ class PaymentController extends Controller
                         'message' => 'Invalid signature'
                     ], 403);
                 }
-
-                // Logika untuk menangani notifikasi akun pembayaran
 
                 return response()->json([
                     'status' => 'success',
@@ -382,7 +478,9 @@ class PaymentController extends Controller
             ? 'https://app.midtrans.com/snap/v1/transactions'
             : 'https://app.sandbox.midtrans.com/snap/v1/transactions';
         
-        $client = new \GuzzleHttp\Client();
+        $client = new \GuzzleHttp\Client([
+            'verify' => false  // ⚠️ HANYA untuk development/testing - JANGAN gunakan di production!
+        ]);
         
         $headers = [
             'Content-Type' => 'application/json',
