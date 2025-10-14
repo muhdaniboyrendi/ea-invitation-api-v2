@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\ThemeController;
 use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\PackageController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\InvitationController;
 use App\Http\Controllers\Api\GoogleOAuthController;
 use App\Http\Controllers\Api\ThemeCategoryController;
 
@@ -168,7 +169,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/update', [PaymentController::class, 'updatePayment']);
         Route::get('/orders', [OrderController::class, 'getUserOrders']);
         Route::get('/orders/{orderId}', [OrderController::class, 'getOrderStatus']);
-        Route::get('/orders/{orderId}/update', [OrderController::class, 'updatePaymentStatus']);
+        // Route::get('/orders/{orderId}/update', [OrderController::class, 'updatePaymentStatus']);
         Route::put('/orders/{orderId}/success', [PaymentController::class, 'handlePaymentSuccess']);
         Route::put('/orders/{orderId}/cancel', [PaymentController::class, 'handlePaymentCanceled']);
     });
@@ -177,6 +178,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/orders', [OrderController::class, 'getOrders']);
     Route::get('/orders/{orderId}', [OrderController::class, 'show']);
     Route::get('/order/{order_id}', [OrderController::class, 'getOrder']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Invitation Management
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('invitations')->group(function () {
+        // Route::post('/', [InvitationController::class, 'store']);
+        Route::get('/user', [InvitationController::class, 'showUserInvitations']);
+        // Route::post('/check', [InvitationController::class, 'checkByOrderId']);
+        // Route::get('/{id}', [InvitationController::class, 'show']);
+        // Route::put('/{id}', [InvitationController::class, 'update']);
+        // Route::put('/{id}/complete', [InvitationController::class, 'completeInvitation']);
+    });
 });
 
 // Fallback route for undefined API endpoints

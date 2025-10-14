@@ -201,7 +201,7 @@ class PackageController extends Controller
     public function getPackageByInvitationId(String $invitationId)
     {
         try {
-            $invitation = Invitation::with('order')->find($invitationId);
+            $invitation = Invitation::with('order.package')->find($invitationId);
 
             if (!$invitation) {
                 return response()->json([
