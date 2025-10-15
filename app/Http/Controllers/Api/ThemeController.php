@@ -255,10 +255,10 @@ class ThemeController extends Controller
         }
     }
 
-    public function getThemeByOrderId(Request $request)
+    public function getThemeByOrderId($orderId)
     {
         try {
-            $order = Order::where('order_id', $request->order_id)->first();
+            $order = Order::where('order_id', $orderId)->first();
         
             if (!$order) {
                 return response()->json([
@@ -267,24 +267,18 @@ class ThemeController extends Controller
                 ], 404);
             }
 
-            // Asumsi: package_id 1 adalah paket gratis, hanya bisa akses tema gratis
             if ($order->package_id === 1) {
-                $themes = Theme::where('theme_category_id', 1)
-                    ->where('is_premium', false)
+                $themes = Theme::where('is_premium', false || 0)
                     ->with('themeCategory')
                     ->get();
             } else {
-                // Paket premium, bisa akses semua tema
                 $themes = Theme::with('themeCategory')->get();
             }
 
             return response()->json([
                 'status' => 'success',
                 'message' => 'Themes retrieved successfully',
-                'data' => [
-                    'order_id' => $order->id,
-                    'themes' => $themes
-                ]
+                'data' => $themes
             ]);
         } catch (\Exception $e) {
             return response()->json([

@@ -41,7 +41,7 @@ class InvitationController extends Controller
     public function store(Request $request)
     {   
         $validator = Validator::make($request->all(), [
-            'order_id' => 'required|exists:orders,id',
+            'order_id' => 'required',
             'theme_id' => 'required|exists:themes,id',
             'groom' => 'required|string|max:50',
             'bride' => 'required|string|max:50'
@@ -57,8 +57,8 @@ class InvitationController extends Controller
 
         $user = Auth::user();
 
-        // Eager load package untuk menghindari N+1
-        $order = Order::with('package')->find($request->order_id);
+        $order = Order::where('order_id', $request->order_id)->first();
+
         if (!$order) {
             return response()->json([
                 'status' => 'error',
@@ -66,19 +66,11 @@ class InvitationController extends Controller
             ], 404);
         }
 
-        // Authorization check
         if ($order->user_id !== $user->id) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Forbidden: You do not have permission to create an invitation for this order'
             ], 403);
-        }
-
-        if (!$order->package) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Package not found for this order'
-            ], 400);
         }
 
         // Check duplicate invitation
@@ -95,10 +87,10 @@ class InvitationController extends Controller
         $expiryDate = $this->calculateExpiryDate($order->package->id);
 
         try {
-            return DB::transaction(function () use ($user, $request, $expiryDate) {
+            return DB::transaction(function () use ($user, $order, $request, $expiryDate) {
                 $invitation = Invitation::create([
                     'user_id' => $user->id,
-                    'order_id' => $request->order_id,
+                    'order_id' => $order->id,
                     'theme_id' => $request->theme_id,
                     'status' => 'draft',
                     'expiry_date' => $expiryDate,
@@ -343,7 +335,7 @@ class InvitationController extends Controller
         try {
             $user = Auth::user();
             
-            $invitations = Invitation::with(['order.package', 'theme', 'guests'])
+            $invitations = Invitation::with(['guests'])
                 ->where('user_id', $user->id)
                 ->get();
 

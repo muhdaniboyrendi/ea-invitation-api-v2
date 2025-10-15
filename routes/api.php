@@ -135,7 +135,7 @@ Route::middleware('auth:sanctum')->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::apiResource('themes', ThemeController::class)->except(['index', 'show']);
-    Route::post('/themes/orderthemes', [ThemeController::class, 'getThemeByOrderId']);
+    Route::get('/themes/order/{orderId}', [ThemeController::class, 'getThemeByOrderId']);
     Route::get('/invitation/{invitationId}/theme', [ThemeController::class, 'getThemeByInvitationId']);
 
     /*
@@ -185,7 +185,7 @@ Route::middleware('auth:sanctum')->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::prefix('invitations')->group(function () {
-        // Route::post('/', [InvitationController::class, 'store']);
+        Route::post('/', [InvitationController::class, 'store']);
         Route::get('/user', [InvitationController::class, 'showUserInvitations']);
         // Route::post('/check', [InvitationController::class, 'checkByOrderId']);
         // Route::get('/{id}', [InvitationController::class, 'show']);
