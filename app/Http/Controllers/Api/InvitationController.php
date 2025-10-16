@@ -120,7 +120,7 @@ class InvitationController extends Controller
     public function show(string $id)
     {
         try {
-            $invitation = Invitation::with(['order', 'theme', 'guests'])->find($id);
+            $invitation = Invitation::with(['order.package', 'theme', 'guests'])->find($id);
 
             if (!$invitation) {
                 return response()->json([
@@ -261,22 +261,10 @@ class InvitationController extends Controller
     /**
      * Check invitation by order ID.
      */
-    public function checkByOrderId(Request $request)
+    public function checkByOrderId($orderId)
     {
-        $validator = Validator::make($request->all(), [
-            'order_id' => 'required|exists:orders,order_id',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
         $user = Auth::user();
-        $order = Order::where('order_id', $request->order_id)->first();
+        $order = Order::where('order_id', $orderId)->first();
 
         if (!$order) {
             return response()->json([
@@ -294,9 +282,7 @@ class InvitationController extends Controller
         }
 
         try {
-            $invitation = Invitation::where('order_id', $order->id)
-                ->with('order')
-                ->first();
+            $invitation = Invitation::where('order_id', $order->id)->first();
 
             if (!$invitation) {
                 return response()->json([
@@ -308,15 +294,7 @@ class InvitationController extends Controller
             return response()->json([
                 'status' => 'success',
                 'message' => 'Invitation found',
-                'data' => [
-                    'id' => $invitation->id,
-                    'order_id' => $invitation->order_id,
-                    'groom' => $invitation->groom,
-                    'bride' => $invitation->bride,
-                    'package_id' => $invitation->order->package_id,
-                    'created_at' => $invitation->created_at,
-                    'updated_at' => $invitation->updated_at
-                ]
+                'data' => $invitation
             ], 200);
         } catch (\Exception $e) {
             return response()->json([

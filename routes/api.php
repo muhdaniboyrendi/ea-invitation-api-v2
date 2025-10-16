@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\ThemeController;
 use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\PackageController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\MainInfoController;
 use App\Http\Controllers\Api\InvitationController;
 use App\Http\Controllers\Api\GoogleOAuthController;
 use App\Http\Controllers\Api\ThemeCategoryController;
@@ -88,6 +89,18 @@ Route::prefix('payments')->group(function () {
     Route::post('/recurring-notification', [PaymentController::class, 'handleRecurringNotification']);
     Route::post('/account-notification', [PaymentController::class, 'handleAccountNotification']);
 });
+
+// Public Invitation Data Access
+Route::get('/main-infos/{invitationId}', [MainInfoController::class, 'show']);
+// Route::get('/main-infos/{invitationId}/photo', [MainInfoController::class, 'getPhoto']);
+// Route::get('/grooms/{invitationId}', [GroomController::class, 'show']);
+// Route::get('/brides/{invitationId}', [BrideController::class, 'show']);
+// Route::get('/invitations/{invitationId}/events', [EventController::class, 'getEventsByInvitation']);
+// Route::get('/invitations/{invitationId}/love-stories', [LoveStoryController::class, 'getStoriesByInvitation']);
+// Route::get('/invitations/{invitationId}/gift-infos', [GiftInfoController::class, 'getGiftsByInvitation']);
+// Route::get('/invitations/{invitationId}/galleries', [GalleryController::class, 'show']);
+// Route::get('/invitations/{slug}/part', [InvitationController::class, 'getInvitationBySlug']);
+// Route::get('/invitations/{slug}/all', [InvitationController::class, 'getInvitationDetailBySlug']);
 
 /*
 |--------------------------------------------------------------------------
@@ -187,11 +200,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('invitations')->group(function () {
         Route::post('/', [InvitationController::class, 'store']);
         Route::get('/user', [InvitationController::class, 'showUserInvitations']);
-        // Route::post('/check', [InvitationController::class, 'checkByOrderId']);
-        // Route::get('/{id}', [InvitationController::class, 'show']);
+        Route::get('/check/{orderId}', [InvitationController::class, 'checkByOrderId']);
+        Route::get('/{id}', [InvitationController::class, 'show']);
         // Route::put('/{id}', [InvitationController::class, 'update']);
         // Route::put('/{id}/complete', [InvitationController::class, 'completeInvitation']);
     });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Main Info Management
+    |--------------------------------------------------------------------------
+    */
+    Route::apiResource('main-infos', MainInfoController::class)->except(['show']);
+    Route::post('/main-infos/photo', [MainInfoController::class, 'addOrUpdatePhoto']);
 });
 
 // Fallback route for undefined API endpoints
