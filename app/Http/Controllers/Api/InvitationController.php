@@ -315,6 +315,7 @@ class InvitationController extends Controller
             
             $invitations = Invitation::with(['guests'])
                 ->where('user_id', $user->id)
+                ->latest()
                 ->get();
 
             return response()->json([

@@ -14,7 +14,7 @@ class MainInfo extends Model
         'wedding_date',
         'wedding_time',
         'time_zone',
-        'custom_music',
+        'custom_backsound',
     ];
 
     protected $casts = [
@@ -34,7 +34,7 @@ class MainInfo extends Model
 
     public function getCustomMusicUrlAttribute(): ?string
     {
-        return $this->custom_music ? asset('storage/' . $this->custom_music) : null;
+        return $this->custom_backsound ? asset('storage/' . $this->custom_backsound) : null;
     }
 
     public function invitation(): BelongsTo

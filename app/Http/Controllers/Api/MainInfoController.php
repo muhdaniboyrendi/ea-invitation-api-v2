@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\MainInfo;
+use App\Models\Invitation;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -48,7 +49,7 @@ class MainInfoController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'invitation_id' => 'required|exists:invitations,id',
-            'backsound_id' => 'nullable|exists:backsounds,id',
+            'music_id' => 'nullable|exists:music,id',
             'main_photo' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:2048',
             'wedding_date' => 'required|date|after_or_equal:today',
             'wedding_time' => 'required|date_format:H:i',
@@ -68,7 +69,6 @@ class MainInfoController extends Controller
 
         try {
             return DB::transaction(function () use ($validated, $request) {
-                // Check if main info already exists
                 $existingMainInfo = MainInfo::where('invitation_id', $validated['invitation_id'])->first();
                 
                 if ($existingMainInfo) {
@@ -78,7 +78,16 @@ class MainInfoController extends Controller
                     ], 409);
                 }
 
-                // Handle file uploads
+                $invitation = Invitation::with('order.package')
+                    ->findOrFail($validated['invitation_id']);
+
+                if ($invitation->order->package_id == 1 && $request->hasFile('custom_backsound')) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Forbidden: economy package is not allowed to use custom backsound.'
+                    ], 403);
+                }
+
                 if ($request->hasFile('main_photo')) {
                     $validated['main_photo'] = $this->uploadFile($request->file('main_photo'), 'main/photos');
                 }
@@ -88,7 +97,7 @@ class MainInfoController extends Controller
                 }
 
                 $mainInfo = MainInfo::create($validated);
-                $mainInfo->load(['invitation', 'backsound']);
+                $mainInfo->load(['invitation', 'music']);
 
                 return response()->json([
                     'status' => 'success',
@@ -115,7 +124,7 @@ class MainInfoController extends Controller
     public function show(string $invitationId)
     {
         try {
-            $mainInfo = MainInfo::with(['invitation', 'backsound'])
+            $mainInfo = MainInfo::with(['invitation', 'music'])
                 ->where('invitation_id', $invitationId)
                 ->first();
 
@@ -146,7 +155,7 @@ class MainInfoController extends Controller
     public function update(Request $request, MainInfo $mainInfo)
     {
         $validator = Validator::make($request->all(), [
-            'backsound_id' => 'nullable|exists:backsounds,id',
+            'music_id' => 'nullable|exists:music,id',
             'main_photo' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:2048',
             'wedding_date' => 'required|date|after_or_equal:today',
             'wedding_time' => 'required|date_format:H:i',
@@ -170,7 +179,16 @@ class MainInfoController extends Controller
 
         try {
             return DB::transaction(function () use ($mainInfo, $validated, $request, $oldFiles) {
-                // Handle file uploads
+                $invitation = Invitation::with('order.package')
+                    ->findOrFail($mainInfo['invitation_id']);
+
+                if ($invitation->order->package_id == 1 && $request->hasFile('custom_backsound')) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Forbidden: economy package is not allowed to use custom backsound.'
+                    ], 403);
+                }
+
                 if ($request->hasFile('main_photo')) {
                     $validated['main_photo'] = $this->uploadFile($request->file('main_photo'), 'main/photos');
                     $this->deleteFile($oldFiles['main_photo']);
@@ -182,12 +200,12 @@ class MainInfoController extends Controller
                 }
 
                 $mainInfo->update($validated);
-                $mainInfo->load(['invitation', 'backsound']);
+                $mainInfo->load(['invitation', 'music']);
 
                 return response()->json([
                     'status' => 'success',
                     'message' => 'Main info updated successfully',
-                    'data' => $mainInfo->fresh(['invitation', 'backsound'])
+                    'data' => $mainInfo
                 ]);
             });
 
