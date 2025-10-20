@@ -15,34 +15,6 @@ use Illuminate\Support\Facades\Validator;
 class MainInfoController extends Controller
 {
     /**
-     * Display a listing of the resource.
-     */
-    // public function index()
-    // {
-    //     try {
-    //         $user = Auth::user();
-            
-    //         $mainInfos = MainInfo::with(['invitation', 'backsound'])
-    //             ->whereHas('invitation', function($query) use ($user) {
-    //                 $query->where('user_id', $user->id);
-    //             })
-    //             ->paginate(10);
-
-    //         return response()->json([
-    //             'status' => 'success',
-    //             'message' => 'Main infos retrieved successfully',
-    //             'data' => $mainInfos,
-    //         ]);
-    //     } catch (\Exception $e) {
-    //         return response()->json([
-    //             'status' => 'error',
-    //             'message' => 'Failed to retrieve main infos',
-    //             'error' => config('app.debug') ? $e->getMessage() : null
-    //         ], 500);
-    //     }
-    // }
-
-    /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
@@ -51,7 +23,7 @@ class MainInfoController extends Controller
             'invitation_id' => 'required|exists:invitations,id',
             'music_id' => 'nullable|exists:music,id',
             'main_photo' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:2048',
-            'wedding_date' => 'required|date|after_or_equal:today',
+            'wedding_date' => 'required|date|after_or_equal:' . now()->toDateString(),
             'wedding_time' => 'required|date_format:H:i',
             'time_zone' => 'required|in:WIB,WITA,WIT',
             'custom_backsound' => 'nullable|file|mimes:mp3,wav,ogg|max:10240',
@@ -68,26 +40,32 @@ class MainInfoController extends Controller
         $validated = $validator->validated();
 
         try {
+            // Check ownership BEFORE transaction
+            $invitation = Invitation::with('order.package')
+                ->where('id', $validated['invitation_id'])
+                ->where('user_id', Auth::id())
+                ->firstOrFail();
+
+            // Check if main info already exists
+            $existingMainInfo = MainInfo::where('invitation_id', $validated['invitation_id'])->first();
+            
+            if ($existingMainInfo) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Main info already exists for this invitation. Use update instead.'
+                ], 409);
+            }
+
+            // Validate package restrictions BEFORE transaction
+            if ($invitation->order->package_id == 1 && $request->hasFile('custom_backsound')) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Forbidden: economy package is not allowed to use custom backsound.'
+                ], 403);
+            }
+
             return DB::transaction(function () use ($validated, $request) {
-                $existingMainInfo = MainInfo::where('invitation_id', $validated['invitation_id'])->first();
-                
-                if ($existingMainInfo) {
-                    return response()->json([
-                        'status' => 'error',
-                        'message' => 'Main info already exists for this invitation. Use update instead.'
-                    ], 409);
-                }
-
-                $invitation = Invitation::with('order.package')
-                    ->findOrFail($validated['invitation_id']);
-
-                if ($invitation->order->package_id == 1 && $request->hasFile('custom_backsound')) {
-                    return response()->json([
-                        'status' => 'error',
-                        'message' => 'Forbidden: economy package is not allowed to use custom backsound.'
-                    ], 403);
-                }
-
+                // Handle file uploads
                 if ($request->hasFile('main_photo')) {
                     $validated['main_photo'] = $this->uploadFile($request->file('main_photo'), 'main/photos');
                 }
@@ -106,6 +84,11 @@ class MainInfoController extends Controller
                 ], 201);
             });
 
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Invitation not found or access denied'
+            ], 404);
         } catch (\Exception $e) {
             // Cleanup uploaded files on error
             $this->cleanupFiles($validated);
@@ -154,10 +137,21 @@ class MainInfoController extends Controller
      */
     public function update(Request $request, MainInfo $mainInfo)
     {
+        // Load relationship to check ownership
+        $mainInfo->load('invitation');
+        
+        // Check ownership
+        if ($mainInfo->invitation->user_id !== Auth::id()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Forbidden access'
+            ], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'music_id' => 'nullable|exists:music,id',
             'main_photo' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:2048',
-            'wedding_date' => 'required|date|after_or_equal:today',
+            'wedding_date' => 'required|date|after_or_equal:' . now()->toDateString(),
             'wedding_time' => 'required|date_format:H:i',
             'time_zone' => 'required|in:WIB,WITA,WIT',
             'custom_backsound' => 'nullable|file|mimes:mp3,wav,ogg|max:10240',
@@ -178,17 +172,19 @@ class MainInfoController extends Controller
         ];
 
         try {
+            // Validate package restrictions BEFORE transaction
+            $invitation = Invitation::with('order.package')
+                ->findOrFail($mainInfo->invitation_id); // ✅ Fixed: object property access
+
+            if ($invitation->order->package_id == 1 && $request->hasFile('custom_backsound')) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Forbidden: economy package is not allowed to use custom backsound.'
+                ], 403);
+            }
+
             return DB::transaction(function () use ($mainInfo, $validated, $request, $oldFiles) {
-                $invitation = Invitation::with('order.package')
-                    ->findOrFail($mainInfo['invitation_id']);
-
-                if ($invitation->order->package_id == 1 && $request->hasFile('custom_backsound')) {
-                    return response()->json([
-                        'status' => 'error',
-                        'message' => 'Forbidden: economy package is not allowed to use custom backsound.'
-                    ], 403);
-                }
-
+                // Handle file uploads
                 if ($request->hasFile('main_photo')) {
                     $validated['main_photo'] = $this->uploadFile($request->file('main_photo'), 'main/photos');
                     $this->deleteFile($oldFiles['main_photo']);
@@ -222,35 +218,16 @@ class MainInfoController extends Controller
     }
 
     /**
-     * Update main info by invitation ID.
-     */
-    public function updateByInvitationId(Request $request, string $invitationId)
-    {
-        try {
-            $mainInfo = MainInfo::where('invitation_id', $invitationId)->firstOrFail();
-            
-            // Reuse the update logic
-            return $this->update($request, $mainInfo);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Main info not found for this invitation',
-                'error' => config('app.debug') ? $e->getMessage() : null
-            ], 404);
-        }
-    }
-
-    /**
      * Remove the specified resource from storage.
      */
     public function destroy(MainInfo $mainInfo)
     {
         try {
-            $user = Auth::user();
+            // Eager load to avoid N+1
+            $mainInfo->load('invitation');
             
             // Check ownership
-            if ($mainInfo->invitation->user_id !== $user->id) {
+            if ($mainInfo->invitation->user_id !== Auth::id()) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Forbidden access'
@@ -277,124 +254,6 @@ class MainInfoController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to delete main info',
-                'error' => config('app.debug') ? $e->getMessage() : null
-            ], 500);
-        }
-    }
-
-    /**
-     * Add or update photo for main info
-     */
-    public function addOrUpdatePhoto(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'invitation_id' => 'required|exists:invitations,id',
-            'main_photo' => 'required|file|mimes:jpg,jpeg,png,webp|max:2048',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        $validated = $validator->validated();
-
-        try {
-            $mainInfo = MainInfo::where('invitation_id', $validated['invitation_id'])->first();
-            
-            if (!$mainInfo) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Main info not found for this invitation'
-                ], 404);
-            }
-
-            return DB::transaction(function () use ($mainInfo, $request) {
-                $oldMainPhoto = $mainInfo->main_photo;
-
-                $newPhotoPath = $this->uploadFile($request->file('main_photo'), 'main/photos');
-
-                $mainInfo->update(['main_photo' => $newPhotoPath]);
-
-                // Delete old photo
-                $this->deleteFile($oldMainPhoto);
-
-                $mainInfo->load(['invitation', 'backsound']);
-
-                return response()->json([
-                    'status' => 'success',
-                    'message' => 'Main photo updated successfully',
-                    'data' => $mainInfo,
-                ]);
-            });
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to update main photo',
-                'error' => config('app.debug') ? $e->getMessage() : null
-            ], 500);
-        }
-    }
-
-    /**
-     * Get photo for main info
-     */
-    public function getPhoto(string $invitationId)
-    {
-        $validator = Validator::make(['invitation_id' => $invitationId], [
-            'invitation_id' => 'required|exists:invitations,id',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        try {
-            $mainInfo = MainInfo::where('invitation_id', $invitationId)->first();
-            
-            if (!$mainInfo) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Main info not found for this invitation'
-                ], 404);
-            }
-
-            if (!$mainInfo->main_photo) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'No photo found for this main info'
-                ], 404);
-            }
-
-            if (!Storage::disk('public')->exists($mainInfo->main_photo)) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Photo file not found in storage'
-                ], 404);
-            }
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Main photo retrieved successfully',
-                'data' => [
-                    'photo_url' => $mainInfo->main_photo_url,
-                    'photo_path' => $mainInfo->main_photo,
-                    'invitation_id' => $invitationId
-                ]
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to retrieve main photo',
                 'error' => config('app.debug') ? $e->getMessage() : null
             ], 500);
         }

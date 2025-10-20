@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\GroomController;
 use App\Http\Controllers\Api\GuestController;
 use App\Http\Controllers\Api\MusicController;
 use App\Http\Controllers\Api\OrderController;
@@ -92,8 +93,7 @@ Route::prefix('payments')->group(function () {
 
 // Public Invitation Data Access
 Route::get('/main-infos/{invitationId}', [MainInfoController::class, 'show']);
-// Route::get('/main-infos/{invitationId}/photo', [MainInfoController::class, 'getPhoto']);
-// Route::get('/grooms/{invitationId}', [GroomController::class, 'show']);
+Route::get('/grooms/{invitationId}', [GroomController::class, 'show']);
 // Route::get('/brides/{invitationId}', [BrideController::class, 'show']);
 // Route::get('/invitations/{invitationId}/events', [EventController::class, 'getEventsByInvitation']);
 // Route::get('/invitations/{invitationId}/love-stories', [LoveStoryController::class, 'getStoriesByInvitation']);
@@ -212,7 +212,13 @@ Route::middleware('auth:sanctum')->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::apiResource('main-infos', MainInfoController::class)->except(['show']);
-    Route::post('/main-infos/photo', [MainInfoController::class, 'addOrUpdatePhoto']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Main Info Management
+    |--------------------------------------------------------------------------
+    */
+    Route::apiResource('grooms', GroomController::class)->except(['show']);
 });
 
 // Fallback route for undefined API endpoints
