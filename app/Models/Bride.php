@@ -9,7 +9,7 @@ class Bride extends Model
 {
     protected $fillable = [
         'invitation_id',
-        'fullname',
+        'full_name',
         'father',
         'mother',
         'instagram',

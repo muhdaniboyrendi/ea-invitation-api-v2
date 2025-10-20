@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('brides', function (Blueprint $table) {
             $table->id();
             $table->foreignId('invitation_id')->constrained()->onDelete('cascade');
-            $table->string('fullname');
+            $table->string('full_name');
             $table->string('father');
             $table->string('mother');
             $table->string('instagram');

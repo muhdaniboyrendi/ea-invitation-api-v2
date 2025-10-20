@@ -2,8 +2,14 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Models\Bride;
+use App\Models\Invitation;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class BrideController extends Controller
@@ -38,29 +44,29 @@ class BrideController extends Controller
                 ->where('user_id', Auth::id())
                 ->firstOrFail();
 
-            // Check if groom already exists
-            $existingGroom = Groom::where('invitation_id', $validated['invitation_id'])->first();
+            // Check if bride already exists
+            $existingBride = Bride::where('invitation_id', $validated['invitation_id'])->first();
             
-            if ($existingGroom) {
+            if ($existingBride) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Groom info already exists for this invitation. Use update instead.'
+                    'message' => 'Bride info already exists for this invitation. Use update instead.'
                 ], 409);
             }
 
             return DB::transaction(function () use ($validated, $request) {
                 // Handle file upload
                 if ($request->hasFile('photo')) {
-                    $validated['photo'] = $this->uploadFile($request->file('photo'), 'groom/photos');
+                    $validated['photo'] = $this->uploadFile($request->file('photo'), 'bride/photos');
                 }
 
-                $groom = Groom::create($validated);
-                $groom->load('invitation');
+                $bride = Bride::create($validated);
+                $bride->load('invitation');
 
                 return response()->json([
                     'status' => 'success',
-                    'message' => 'Groom info created successfully',
-                    'data' => $groom,
+                    'message' => 'Bride info created successfully',
+                    'data' => $bride,
                 ], 201);
             });
 
@@ -75,7 +81,7 @@ class BrideController extends Controller
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to create groom info',
+                'message' => 'Failed to create bride info',
                 'error' => config('app.debug') ? $e->getMessage() : null
             ], 500);
         }
@@ -87,26 +93,26 @@ class BrideController extends Controller
     public function show(string $invitationId)
     {
         try {
-            $groom = Groom::with('invitation')
+            $bride = Bride::with('invitation')
                 ->where('invitation_id', $invitationId)
                 ->first();
 
-            if (!$groom) {
+            if (!$bride) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Groom info not found'
+                    'message' => 'Bride info not found'
                 ], 404);
             }
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Groom info retrieved successfully',
-                'data' => $groom
+                'message' => 'Bride info retrieved successfully',
+                'data' => $bride
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to retrieve groom info',
+                'message' => 'Failed to retrieve bride info',
                 'error' => config('app.debug') ? $e->getMessage() : null
             ], 500);
         }
@@ -115,13 +121,13 @@ class BrideController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Groom $groom)
+    public function update(Request $request, Bride $bride)
     {
         // Load relationship to check ownership
-        $groom->load('invitation');
+        $bride->load('invitation');
         
         // Check ownership
-        if ($groom->invitation->user_id !== Auth::id()) {
+        if ($bride->invitation->user_id !== Auth::id()) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Forbidden access'
@@ -145,23 +151,23 @@ class BrideController extends Controller
         }
 
         $validated = $validator->validated();
-        $oldPhoto = $groom->photo;
+        $oldPhoto = $bride->photo;
 
         try {
-            return DB::transaction(function () use ($groom, $validated, $request, $oldPhoto) {
+            return DB::transaction(function () use ($bride, $validated, $request, $oldPhoto) {
                 // Handle file upload
                 if ($request->hasFile('photo')) {
-                    $validated['photo'] = $this->uploadFile($request->file('photo'), 'groom/photos');
+                    $validated['photo'] = $this->uploadFile($request->file('photo'), 'bride/photos');
                     $this->deleteFile($oldPhoto);
                 }
 
-                $groom->update($validated);
-                $groom->load('invitation');
+                $bride->update($validated);
+                $bride->load('invitation');
 
                 return response()->json([
                     'status' => 'success',
-                    'message' => 'Groom info updated successfully',
-                    'data' => $groom
+                    'message' => 'Bride info updated successfully',
+                    'data' => $bride
                 ]);
             });
 
@@ -171,7 +177,7 @@ class BrideController extends Controller
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to update groom info',
+                'message' => 'Failed to update bride info',
                 'error' => config('app.debug') ? $e->getMessage() : null
             ], 500);
         }
@@ -180,38 +186,38 @@ class BrideController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Groom $groom)
+    public function destroy(Bride $bride)
     {
         try {
             // Eager load to avoid N+1
-            $groom->load('invitation');
+            $bride->load('invitation');
             
             // Check ownership
-            if ($groom->invitation->user_id !== Auth::id()) {
+            if ($bride->invitation->user_id !== Auth::id()) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Forbidden access'
                 ], 403);
             }
 
-            return DB::transaction(function () use ($groom) {
-                $photo = $groom->photo;
+            return DB::transaction(function () use ($bride) {
+                $photo = $bride->photo;
 
-                $groom->delete();
+                $bride->delete();
 
                 // Delete associated file
                 $this->deleteFile($photo);
 
                 return response()->json([
                     'status' => 'success',
-                    'message' => 'Groom info deleted successfully',
+                    'message' => 'Bride info deleted successfully',
                 ]);
             });
 
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to delete groom info',
+                'message' => 'Failed to delete bride info',
                 'error' => config('app.debug') ? $e->getMessage() : null
             ], 500);
         }

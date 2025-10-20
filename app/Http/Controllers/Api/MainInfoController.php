@@ -26,7 +26,7 @@ class MainInfoController extends Controller
             'wedding_date' => 'required|date|after_or_equal:' . now()->toDateString(),
             'wedding_time' => 'required|date_format:H:i',
             'time_zone' => 'required|in:WIB,WITA,WIT',
-            'custom_backsound' => 'nullable|file|mimes:mp3,wav,ogg|max:10240',
+            'custom_backsound' => 'nullable|file|mimes:mp3,wav,ogg|max:20480',
         ]);
 
         if ($validator->fails()) {
@@ -154,7 +154,7 @@ class MainInfoController extends Controller
             'wedding_date' => 'required|date|after_or_equal:' . now()->toDateString(),
             'wedding_time' => 'required|date_format:H:i',
             'time_zone' => 'required|in:WIB,WITA,WIT',
-            'custom_backsound' => 'nullable|file|mimes:mp3,wav,ogg|max:10240',
+            'custom_backsound' => 'nullable|file|mimes:mp3,wav,ogg|max:20480',
         ]);
 
         if ($validator->fails()) {
