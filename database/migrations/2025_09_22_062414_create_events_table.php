@@ -18,7 +18,6 @@ return new class extends Migration
             $table->string('venue');
             $table->date('date');
             $table->time('time_start');
-            $table->time('time_end')->nullable();
             $table->text('address')->nullable();
             $table->text('maps_url')->nullable();
             $table->text('maps_embed_url')->nullable();

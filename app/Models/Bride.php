@@ -16,7 +16,7 @@ class Bride extends Model
         'photo',
     ];
 
-    protected $appends = ['photoUrl'];
+    protected $appends = ['photo_url'];
 
     public function getPhotoUrlAttribute(): ?string
     {

@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BrideController;
+use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\GroomController;
 use App\Http\Controllers\Api\GuestController;
 use App\Http\Controllers\Api\MusicController;
@@ -96,7 +97,7 @@ Route::prefix('payments')->group(function () {
 Route::get('/main-infos/{invitationId}', [MainInfoController::class, 'show']);
 Route::get('/grooms/{invitationId}', [GroomController::class, 'show']);
 Route::get('/brides/{invitationId}', [BrideController::class, 'show']);
-// Route::get('/invitations/{invitationId}/events', [EventController::class, 'getEventsByInvitation']);
+Route::get('/events/{invitationId}', [EventController::class, 'index']);
 // Route::get('/invitations/{invitationId}/love-stories', [LoveStoryController::class, 'getStoriesByInvitation']);
 // Route::get('/invitations/{invitationId}/gift-infos', [GiftInfoController::class, 'getGiftsByInvitation']);
 // Route::get('/invitations/{invitationId}/galleries', [GalleryController::class, 'show']);
@@ -227,6 +228,13 @@ Route::middleware('auth:sanctum')->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::apiResource('brides', BrideController::class)->except(['show']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Event Management
+    |--------------------------------------------------------------------------
+    */
+    Route::apiResource('events', EventController::class)->except(['index']);
 });
 
 // Fallback route for undefined API endpoints
