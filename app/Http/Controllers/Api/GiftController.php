@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Models\Event;
+use App\Models\Gift;
 use App\Models\Invitation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -10,25 +10,40 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
-class EventController extends Controller
+class GiftController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index(string $invitationId)
+    public function index(Request $request)
     {
         try {
-            $events = Event::where('invitation_id', $invitationId)->get();
+            $query = Gift::with('invitation');
+
+            // Filter by invitation_id if provided
+            if ($request->has('invitation_id')) {
+                $query->where('invitation_id', $request->invitation_id);
+            }
+
+            // Only show gifts from user's invitations
+            $query->whereHas('invitation', function ($q) {
+                $q->where('user_id', Auth::id());
+            });
+
+            // Order by created date
+            $query->orderBy('created_at', 'asc');
+
+            $gifts = $query->get();
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Events retrieved successfully',
-                'data' => $events
+                'message' => 'Gift accounts retrieved successfully',
+                'data' => $gifts
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to retrieve events',
+                'message' => 'Failed to retrieve gift accounts',
                 'error' => config('app.debug') ? $e->getMessage() : null
             ], 500);
         }
@@ -41,13 +56,13 @@ class EventController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'invitation_id' => 'required|exists:invitations,id',
-            'name' => 'required|string|max:255',
-            'venue' => 'required|string|max:255',
-            'date' => 'required|date',
-            'time_start' => 'required|date_format:H:i',
-            'address' => 'nullable|string',
-            'maps_url' => 'nullable|url|max:500',
-            'maps_embed_url' => 'nullable|url|max:1000',
+            'bank_name' => 'required|string|max:255',
+            'account_number' => 'required|string|max:255',
+            'account_holder' => 'required|string|max:255',
+        ], [
+            'bank_name.required' => 'Bank name or e-wallet name is required',
+            'account_number.required' => 'Account number or e-wallet number is required',
+            'account_holder.required' => 'Account holder name is required',
         ]);
 
         if ($validator->fails()) {
@@ -67,13 +82,13 @@ class EventController extends Controller
                 ->firstOrFail();
 
             return DB::transaction(function () use ($validated) {
-                $event = Event::create($validated);
-                $event->load('invitation');
+                $gift = Gift::create($validated);
+                $gift->load('invitation');
 
                 return response()->json([
                     'status' => 'success',
-                    'message' => 'Event created successfully',
-                    'data' => $event,
+                    'message' => 'Gift account created successfully',
+                    'data' => $gift,
                 ], 201);
             });
 
@@ -85,7 +100,38 @@ class EventController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to create event',
+                'message' => 'Failed to create gift account',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(Gift $gift)
+    {
+        try {
+            // Eager load to avoid N+1
+            $gift->load('invitation');
+            
+            // Check ownership
+            if ($gift->invitation->user_id !== Auth::id()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Forbidden access'
+                ], 403);
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Gift account retrieved successfully',
+                'data' => $gift
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to retrieve gift account',
                 'error' => config('app.debug') ? $e->getMessage() : null
             ], 500);
         }
@@ -94,13 +140,13 @@ class EventController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Event $event)
+    public function update(Request $request, Gift $gift)
     {
         // Load relationship to check ownership
-        $event->load('invitation');
+        $gift->load('invitation');
         
         // Check ownership
-        if ($event->invitation->user_id !== Auth::id()) {
+        if ($gift->invitation->user_id !== Auth::id()) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Forbidden access'
@@ -108,13 +154,13 @@ class EventController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'venue' => 'required|string|max:255',
-            'date' => 'required|date',
-            'time_start' => 'required|date_format:H:i',
-            'address' => 'nullable|string',
-            'maps_url' => 'nullable|url|max:500',
-            'maps_embed_url' => 'nullable|url|max:1000',
+            'bank_name' => 'required|string|max:255',
+            'account_number' => 'required|string|max:255',
+            'account_holder' => 'required|string|max:255',
+        ], [
+            'bank_name.required' => 'Bank name or e-wallet name is required',
+            'account_number.required' => 'Account number or e-wallet number is required',
+            'account_holder.required' => 'Account holder name is required',
         ]);
 
         if ($validator->fails()) {
@@ -128,21 +174,21 @@ class EventController extends Controller
         $validated = $validator->validated();
 
         try {
-            return DB::transaction(function () use ($event, $validated) {
-                $event->update($validated);
-                $event->load('invitation');
+            return DB::transaction(function () use ($gift, $validated) {
+                $gift->update($validated);
+                $gift->load('invitation');
 
                 return response()->json([
                     'status' => 'success',
-                    'message' => 'Event updated successfully',
-                    'data' => $event
+                    'message' => 'Gift account updated successfully',
+                    'data' => $gift
                 ]);
             });
 
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to update event',
+                'message' => 'Failed to update gift account',
                 'error' => config('app.debug') ? $e->getMessage() : null
             ], 500);
         }
@@ -151,33 +197,33 @@ class EventController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Event $event)
+    public function destroy(Gift $gift)
     {
         try {
             // Eager load to avoid N+1
-            $event->load('invitation');
+            $gift->load('invitation');
             
             // Check ownership
-            if ($event->invitation->user_id !== Auth::id()) {
+            if ($gift->invitation->user_id !== Auth::id()) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Forbidden access'
                 ], 403);
             }
 
-            return DB::transaction(function () use ($event) {
-                $event->delete();
+            return DB::transaction(function () use ($gift) {
+                $gift->delete();
 
                 return response()->json([
                     'status' => 'success',
-                    'message' => 'Event deleted successfully',
+                    'message' => 'Gift account deleted successfully',
                 ]);
             });
 
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to delete event',
+                'message' => 'Failed to delete gift account',
                 'error' => config('app.debug') ? $e->getMessage() : null
             ], 500);
         }

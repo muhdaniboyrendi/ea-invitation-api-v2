@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\GiftController;
 use App\Http\Controllers\Api\BrideController;
 use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\GroomController;
@@ -14,6 +15,7 @@ use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\PackageController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\MainInfoController;
+use App\Http\Controllers\Api\LoveStoryController;
 use App\Http\Controllers\Api\InvitationController;
 use App\Http\Controllers\Api\GoogleOAuthController;
 use App\Http\Controllers\Api\ThemeCategoryController;
@@ -98,8 +100,8 @@ Route::get('/main-infos/{invitationId}', [MainInfoController::class, 'show']);
 Route::get('/grooms/{invitationId}', [GroomController::class, 'show']);
 Route::get('/brides/{invitationId}', [BrideController::class, 'show']);
 Route::get('/events/{invitationId}', [EventController::class, 'index']);
-// Route::get('/invitations/{invitationId}/love-stories', [LoveStoryController::class, 'getStoriesByInvitation']);
-// Route::get('/invitations/{invitationId}/gift-infos', [GiftInfoController::class, 'getGiftsByInvitation']);
+Route::get('/love-stories/{invitationId}', [LoveStoryController::class, 'index']);
+Route::get('/gifts/{invitationId}', [GiftController::class, 'index']);
 // Route::get('/invitations/{invitationId}/galleries', [GalleryController::class, 'show']);
 // Route::get('/invitations/{slug}/part', [InvitationController::class, 'getInvitationBySlug']);
 // Route::get('/invitations/{slug}/all', [InvitationController::class, 'getInvitationDetailBySlug']);
@@ -210,31 +212,15 @@ Route::middleware('auth:sanctum')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Main Info Management
+    | Invitation Data Management
     |--------------------------------------------------------------------------
     */
     Route::apiResource('main-infos', MainInfoController::class)->except(['show']);
-
-    /*
-    |--------------------------------------------------------------------------
-    | Groom Management
-    |--------------------------------------------------------------------------
-    */
     Route::apiResource('grooms', GroomController::class)->except(['show']);
-
-    /*
-    |--------------------------------------------------------------------------
-    | Bride Management
-    |--------------------------------------------------------------------------
-    */
     Route::apiResource('brides', BrideController::class)->except(['show']);
-
-    /*
-    |--------------------------------------------------------------------------
-    | Event Management
-    |--------------------------------------------------------------------------
-    */
     Route::apiResource('events', EventController::class)->except(['index']);
+    Route::apiResource('love-stories', LoveStoryController::class)->except(['index']);
+    Route::apiResource('gifts', GiftController::class)->except(['index']);
 });
 
 // Fallback route for undefined API endpoints

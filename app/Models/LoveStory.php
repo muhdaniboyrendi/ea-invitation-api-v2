@@ -20,11 +20,7 @@ class LoveStory extends Model
     ];
 
     protected $appends = [
-        'thumbnailUrl',
-        'formatted_date',
-        'short_description',
-        'word_count',
-        'years_ago',
+        'thumbnail_url',
     ];
 
     public function invitation(): BelongsTo
