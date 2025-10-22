@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('galleries', function (Blueprint $table) {
             $table->id();
             $table->foreignId('invitation_id')->constrained()->onDelete('cascade');
-            $table->json('images')->nullable();
+            $table->string('image');
             $table->timestamps();
         });
     }

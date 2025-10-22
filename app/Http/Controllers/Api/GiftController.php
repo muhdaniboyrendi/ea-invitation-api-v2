@@ -15,25 +15,10 @@ class GiftController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function index(string $invitationId)
     {
         try {
-            $query = Gift::with('invitation');
-
-            // Filter by invitation_id if provided
-            if ($request->has('invitation_id')) {
-                $query->where('invitation_id', $request->invitation_id);
-            }
-
-            // Only show gifts from user's invitations
-            $query->whereHas('invitation', function ($q) {
-                $q->where('user_id', Auth::id());
-            });
-
-            // Order by created date
-            $query->orderBy('created_at', 'asc');
-
-            $gifts = $query->get();
+            $gifts = Gift::where('invitation_id', $invitationId)->get();
 
             return response()->json([
                 'status' => 'success',

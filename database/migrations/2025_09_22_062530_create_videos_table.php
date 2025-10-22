@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('videos', function (Blueprint $table) {
             $table->id();
             $table->foreignId('invitation_id')->constrained()->onDelete('cascade');
-            $table->json('videos')->nullable();
+            $table->string('video');
             $table->timestamps();
         });
     }

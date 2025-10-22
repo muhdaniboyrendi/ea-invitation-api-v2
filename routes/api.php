@@ -11,7 +11,9 @@ use App\Http\Controllers\Api\GuestController;
 use App\Http\Controllers\Api\MusicController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ThemeController;
+use App\Http\Controllers\Api\VideoController;
 use App\Http\Controllers\Api\CommentController;
+use App\Http\Controllers\Api\GalleryController;
 use App\Http\Controllers\Api\PackageController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\MainInfoController;
@@ -102,7 +104,8 @@ Route::get('/brides/{invitationId}', [BrideController::class, 'show']);
 Route::get('/events/{invitationId}', [EventController::class, 'index']);
 Route::get('/love-stories/{invitationId}', [LoveStoryController::class, 'index']);
 Route::get('/gifts/{invitationId}', [GiftController::class, 'index']);
-// Route::get('/invitations/{invitationId}/galleries', [GalleryController::class, 'show']);
+Route::get('/galleries/{invitationId}', [GalleryController::class, 'index']);
+Route::get('/videos/{invitationId}', [VideoController::class, 'index']);
 // Route::get('/invitations/{slug}/part', [InvitationController::class, 'getInvitationBySlug']);
 // Route::get('/invitations/{slug}/all', [InvitationController::class, 'getInvitationDetailBySlug']);
 
@@ -221,6 +224,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('events', EventController::class)->except(['index']);
     Route::apiResource('love-stories', LoveStoryController::class)->except(['index']);
     Route::apiResource('gifts', GiftController::class)->except(['index']);
+    Route::apiResource('galleries', GalleryController::class)->except(['index']);
+    Route::apiResource('videos', VideoController::class)->except(['index']);
 });
 
 // Fallback route for undefined API endpoints

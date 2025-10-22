@@ -91,9 +91,10 @@ class GoogleOAuthController extends Controller
                         'email' => $googleUser->email,
                         'google_id' => $googleUser->id,
                         'avatar' => $googleUser->avatar,
-                        'phone' => null, // Bisa diisi nanti
-                        'password' => Hash::make(Str::random(16)), // Random password
-                        'email_verified_at' => now(), // Langsung verified karena dari Google
+                        'phone' => null,
+                        'role' => 'user',
+                        'password' => Hash::make(Str::random(16)),
+                        'email_verified_at' => now(),
                     ]);
                 }
 
@@ -124,88 +125,88 @@ class GoogleOAuthController extends Controller
     /**
      * Link Google account ke user yang sudah login
      */
-    public function linkGoogleAccount(Request $request)
-    {
-        $request->validate([
-            'access_token' => 'required|string'
-        ]);
+    // public function linkGoogleAccount(Request $request)
+    // {
+    //     $request->validate([
+    //         'access_token' => 'required|string'
+    //     ]);
 
-        try {
-            $user = $request->user();
+    //     try {
+    //         $user = $request->user();
             
-            if ($user->google_id) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Google account is already linked'
-                ], 400);
-            }
+    //         if ($user->google_id) {
+    //             return response()->json([
+    //                 'status' => 'error',
+    //                 'message' => 'Google account is already linked'
+    //             ], 400);
+    //         }
 
-            $googleUser = Socialite::driver('google')
-                ->stateless()
-                ->userFromToken($request->access_token);
+    //         $googleUser = Socialite::driver('google')
+    //             ->stateless()
+    //             ->userFromToken($request->access_token);
 
-            // Cek apakah Google account sudah digunakan user lain
-            $existingUser = User::where('google_id', $googleUser->id)->first();
-            if ($existingUser) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'This Google account is already linked to another user'
-                ], 400);
-            }
+    //         // Cek apakah Google account sudah digunakan user lain
+    //         $existingUser = User::where('google_id', $googleUser->id)->first();
+    //         if ($existingUser) {
+    //             return response()->json([
+    //                 'status' => 'error',
+    //                 'message' => 'This Google account is already linked to another user'
+    //             ], 400);
+    //         }
 
-            // Link Google account
-            $user->update([
-                'google_id' => $googleUser->id,
-                'avatar' => $googleUser->avatar ?? $user->avatar
-            ]);
+    //         // Link Google account
+    //         $user->update([
+    //             'google_id' => $googleUser->id,
+    //             'avatar' => $googleUser->avatar ?? $user->avatar
+    //         ]);
 
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Google account linked successfully',
-                'data' => [
-                    'user' => $user->fresh()
-                ]
-            ], 200);
+    //         return response()->json([
+    //             'status' => 'success',
+    //             'message' => 'Google account linked successfully',
+    //             'data' => [
+    //                 'user' => $user->fresh()
+    //             ]
+    //         ], 200);
 
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to link Google account',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'status' => 'error',
+    //             'message' => 'Failed to link Google account',
+    //             'error' => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
 
     /**
      * Unlink Google account
      */
-    public function unlinkGoogleAccount(Request $request)
-    {
-        try {
-            $user = $request->user();
+    // public function unlinkGoogleAccount(Request $request)
+    // {
+    //     try {
+    //         $user = $request->user();
             
-            if (!$user->google_id) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'No Google account is linked'
-                ], 400);
-            }
+    //         if (!$user->google_id) {
+    //             return response()->json([
+    //                 'status' => 'error',
+    //                 'message' => 'No Google account is linked'
+    //             ], 400);
+    //         }
 
-            $user->update([
-                'google_id' => null
-            ]);
+    //         $user->update([
+    //             'google_id' => null
+    //         ]);
 
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Google account unlinked successfully'
-            ], 200);
+    //         return response()->json([
+    //             'status' => 'success',
+    //             'message' => 'Google account unlinked successfully'
+    //         ], 200);
 
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to unlink Google account',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'status' => 'error',
+    //             'message' => 'Failed to unlink Google account',
+    //             'error' => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
 }

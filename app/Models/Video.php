@@ -13,11 +13,7 @@ class Video extends Model
     ];
 
     protected $appends = [
-        'video_urls',
-    ];
-
-    protected $casts = [
-        'videos' => 'array',
+        'video_url',
     ];
 
     public function invitation(): BelongsTo
@@ -28,14 +24,8 @@ class Video extends Model
     /**
      * Get the full URLs of all videos
      */
-    public function getVideoUrlsAttribute(): array
+    public function getVideoUrlAttribute(): ?string
     {
-        if (!$this->videos || !is_array($this->videos)) {
-            return [];
-        }
-        
-        return array_map(function($video) {
-            return asset('storage/' . $video);
-        }, $this->videos);
+        return $this->video ? asset('storage/' . $this->video) : null;
     }
 }

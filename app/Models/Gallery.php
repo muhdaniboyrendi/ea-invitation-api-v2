@@ -9,15 +9,11 @@ class Gallery extends Model
 {
     protected $fillable = [
         'invitation_id',
-        'images',
+        'image',
     ];
 
     protected $appends = [
-        'image_urls',
-    ];
-
-    protected $casts = [
-        'images' => 'array',
+        'image_url',
     ];
 
     public function invitation(): BelongsTo
@@ -26,16 +22,10 @@ class Gallery extends Model
     }
 
     /**
-     * Get the full URLs of all images
+     * Get the full URL for the image.
      */
-    public function getImageUrlsAttribute(): array
+    public function getImageUrlAttribute(): ?string
     {
-        if (!$this->images || !is_array($this->images)) {
-            return [];
-        }
-        
-        return array_map(function($image) {
-            return asset('storage/' . $image);
-        }, $this->images);
+        return $this->image ? asset('storage/' . $this->image) : null;
     }
 }
