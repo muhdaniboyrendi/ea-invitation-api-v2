@@ -147,7 +147,7 @@ Route::middleware('auth:sanctum')->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::apiResource('packages', PackageController::class)->except(['index', 'show']);
-    Route::get('/invitation/{invitationId}/package', [PackageController::class, 'getPackageByInvitationId']);
+    // Route::get('/invitation/{invitationId}/package', [PackageController::class, 'getPackageByInvitationId']);
 
     /*
     |--------------------------------------------------------------------------
@@ -155,8 +155,8 @@ Route::middleware('auth:sanctum')->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::apiResource('themes', ThemeController::class)->except(['index', 'show']);
-    Route::get('/themes/order/{orderId}', [ThemeController::class, 'getThemeByOrderId']);
-    Route::get('/invitation/{invitationId}/theme', [ThemeController::class, 'getThemeByInvitationId']);
+    // Route::get('/themes/order/{orderId}', [ThemeController::class, 'getThemeByOrderId']);
+    // Route::get('/invitation/{invitationId}/theme', [ThemeController::class, 'getThemeByInvitationId']);
 
     /*
     |--------------------------------------------------------------------------
@@ -209,8 +209,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/user', [InvitationController::class, 'showUserInvitations']);
         Route::get('/check/{orderId}', [InvitationController::class, 'checkByOrderId']);
         Route::get('/{id}', [InvitationController::class, 'show']);
+        Route::put('/{id}/complete', [InvitationController::class, 'completeInvitation']);
+        Route::put('/{id}/couple', [InvitationController::class, 'updateCouple']);
+        Route::put('/{id}/theme', [InvitationController::class, 'updateTheme']);
         // Route::put('/{id}', [InvitationController::class, 'update']);
-        // Route::put('/{id}/complete', [InvitationController::class, 'completeInvitation']);
     });
 
     /*

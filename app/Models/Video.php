@@ -9,7 +9,7 @@ class Video extends Model
 {
     protected $fillable = [
         'invitation_id',
-        'videos',
+        'video',
     ];
 
     protected $appends = [
