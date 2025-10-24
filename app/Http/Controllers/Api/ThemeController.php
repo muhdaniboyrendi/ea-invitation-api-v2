@@ -255,7 +255,7 @@ class ThemeController extends Controller
         }
     }
 
-    public function getThemeByOrderId($orderId)
+    public function getThemesByOrderId($orderId)
     {
         try {
             $order = Order::where('order_id', $orderId)->first();
@@ -289,7 +289,7 @@ class ThemeController extends Controller
         }
     }
 
-    public function getThemeByInvitationId(String $invitationId)
+    public function getThemesByInvitationId(String $invitationId)
     {
         try {
             $invitation = Invitation::find($invitationId);
@@ -301,19 +301,27 @@ class ThemeController extends Controller
                 ], 404);
             }
 
-            $theme = Theme::with('themeCategory')->find($invitation->theme_id);
+            $order = Order::find($invitation->order_id);
 
-            if (!$theme) {
+            if (!$order) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Theme not found'
+                    'message' => 'Order not found'
                 ], 404);
+            }
+
+            if ($order->package_id === 1) {
+                $themes = Theme::where('is_premium', false || 0)
+                    ->with('themeCategory')
+                    ->get();
+            } else {
+                $themes = Theme::with('themeCategory')->get();
             }
 
             return response()->json([
                 'status' => 'success',
                 'message' => 'Theme retrieved successfully',
-                'data' => $theme
+                'data' => $themes
             ], 200);
 
         } catch (\Exception $e) {

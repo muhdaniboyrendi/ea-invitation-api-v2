@@ -155,8 +155,8 @@ Route::middleware('auth:sanctum')->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::apiResource('themes', ThemeController::class)->except(['index', 'show']);
-    // Route::get('/themes/order/{orderId}', [ThemeController::class, 'getThemeByOrderId']);
-    // Route::get('/invitation/{invitationId}/theme', [ThemeController::class, 'getThemeByInvitationId']);
+    Route::get('/themes/order/{orderId}', [ThemeController::class, 'getThemesByOrderId']);
+    Route::get('/themes/invitation/{invitationId}', [ThemeController::class, 'getThemesByInvitationId']);
 
     /*
     |--------------------------------------------------------------------------
@@ -228,6 +228,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('gifts', GiftController::class)->except(['index']);
     Route::apiResource('galleries', GalleryController::class)->except(['index']);
     Route::apiResource('videos', VideoController::class)->except(['index']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Guest Management
+    |--------------------------------------------------------------------------
+    */
+    Route::apiResource('guests', GuestController::class);
 });
 
 // Fallback route for undefined API endpoints

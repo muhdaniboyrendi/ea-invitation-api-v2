@@ -13,29 +13,6 @@ use Illuminate\Support\Facades\Validator;
 class InvitationController extends Controller
 {
     /**
-     * Display a listing of the resource.
-     */
-    // public function index()
-    // {
-    //     try {
-    //         $invitations = Invitation::with(['user', 'order', 'theme'])
-    //             ->paginate(15);
-
-    //         return response()->json([
-    //             'status' => 'success',
-    //             'message' => 'Invitations retrieved successfully',
-    //             'data' => $invitations
-    //         ], 200);
-    //     } catch (\Exception $e) {
-    //         return response()->json([
-    //             'status' => 'error',
-    //             'message' => 'Failed to retrieve invitations',
-    //             'error' => config('app.debug') ? $e->getMessage() : null
-    //         ], 500);
-    //     }
-    // }
-
-    /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
@@ -143,77 +120,6 @@ class InvitationController extends Controller
             ], 500);
         }
     }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    // public function update(Request $request, string $id)
-    // {
-    //     $validator = Validator::make(array_merge($request->all(), ['id' => $id]), [
-    //         'id' => 'required|exists:invitations,id',
-    //         'theme_id' => 'sometimes|exists:themes,id',
-    //         'groom' => 'sometimes|string|max:50',
-    //         'bride' => 'sometimes|string|max:50'
-    //     ]);
-
-    //     if ($validator->fails()) {
-    //         return response()->json([
-    //             'status' => 'error',
-    //             'message' => 'Validation failed',
-    //             'errors' => $validator->errors()
-    //         ], 422);
-    //     }
-
-    //     $user = Auth::user();
-
-    //     try {
-    //         return DB::transaction(function () use ($user, $validator, $id) {
-    //             $invitation = Invitation::with(['order.package'])->find($id);
-
-    //             if (!$invitation) {
-    //                 return response()->json([
-    //                     'status' => 'error',
-    //                     'message' => 'Invitation not found'
-    //                 ], 404);
-    //             }
-
-    //             // Authorization check
-    //             if ($invitation->user_id !== $user->id) {
-    //                 return response()->json([
-    //                     'status' => 'error',
-    //                     'message' => 'Forbidden: You do not have permission to update this invitation'
-    //                 ], 403);
-    //             }
-
-    //             // Expiry check
-    //             if ($invitation->expiry_date && now()->gt($invitation->expiry_date)) {
-    //                 return response()->json([
-    //                     'status' => 'error',
-    //                     'message' => 'Cannot update expired invitation'
-    //                 ], 400);
-    //             }
-
-    //             // Prepare update data
-    //             $updateData = $validator->validated();
-    //             unset($updateData['id']);
-
-    //             $invitation->update($updateData);
-
-    //             return response()->json([
-    //                 'status' => 'success',
-    //                 'message' => 'Invitation updated successfully',
-    //                 'data' => $invitation->fresh()->load(['user', 'order', 'theme'])
-    //             ], 200);
-    //         });
-
-    //     } catch (\Exception $e) {
-    //         return response()->json([
-    //             'status' => 'error',
-    //             'message' => 'Failed to update invitation',
-    //             'error' => config('app.debug') ? $e->getMessage() : null
-    //         ], 500);
-    //     }
-    // }
 
     /**
      * Remove the specified resource from storage.

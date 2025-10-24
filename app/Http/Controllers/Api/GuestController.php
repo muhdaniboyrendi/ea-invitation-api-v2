@@ -7,16 +7,47 @@ use App\Models\Invitation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
 class GuestController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of guests for a specific invitation.
      */
-    public function index()
+    public function index(string $invitationId)
     {
-        //
+        try {
+            // Check ownership
+            $invitation = Invitation::where('id', $invitationId)
+                ->where('user_id', Auth::id())
+                ->firstOrFail();
+
+            $guests = Guest::with('invitation')
+                ->where('invitation_id', $invitationId)
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Guests retrieved successfully',
+                'data' => $guests,
+                'meta' => [
+                    'total' => $guests->count()
+                ]
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Invitation not found or access denied'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to retrieve guests',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
     }
 
     /**
@@ -42,6 +73,10 @@ class GuestController extends Controller
         $validated = $validator->validated();
 
         try {
+            $invitation = Invitation::where('id', $validated['invitation_id'])
+                ->where('user_id', Auth::id())
+                ->firstOrFail();
+
             return DB::transaction(function () use ($validated) {
                 $guest = Guest::create([
                     'invitation_id' => $validated['invitation_id'],
@@ -57,6 +92,11 @@ class GuestController extends Controller
                     'data' => $guest
                 ], 201);
             });
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Invitation not found or access denied'
+            ], 404);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
@@ -67,18 +107,20 @@ class GuestController extends Controller
     }
 
     /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, Guest $guest)
     {
+        $guest->load('invitation');
+        
+        // Check ownership
+        if ($guest->invitation->user_id !== Auth::id()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Forbidden access'
+            ], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'name' => 'sometimes|required|string|max:255',
             'phone' => 'sometimes|nullable|string|max:20',
@@ -130,6 +172,16 @@ class GuestController extends Controller
     public function destroy(Guest $guest)
     {
         try {
+            $guest->load('invitation');
+                
+            // Check ownership
+            if ($guest->invitation->user_id !== Auth::id()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Forbidden access'
+                ], 403);
+            }
+
             return DB::transaction(function () use ($guest) {
                 $guest->delete();
 
@@ -147,79 +199,44 @@ class GuestController extends Controller
         }
     }
 
-    public function getGuestsByInvitationId($invitationId)
-    {
-        $validator = Validator::make(['invitation_id' => $invitationId], [
-            'invitation_id' => 'required|exists:invitations,id',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        $validated = $validator->validated();
-
-        try {
-            $guests = Guest::where('invitation_id', $validated['invitation_id'])
-                          ->with(['invitation'])
-                          ->get();
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Guests retrieved successfully',
-                'data' => $guests
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to retrieve guests',
-                'error' => config('app.debug') ? $e->getMessage() : null
-            ], 500);
-        }
-    }
-
-    public function checkGuest($slug, Request $request)
-    {
-        try {
-            $guest = $request->query('guest');
+    // public function checkGuest($slug, Request $request)
+    // {
+    //     try {
+    //         $guest = $request->query('guest');
     
-            $invitation = Invitation::where('slug', $slug)->first();
+    //         $invitation = Invitation::where('slug', $slug)->first();
     
-            if (!$invitation) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Invitation not found'
-                ], 404);
-            }
+    //         if (!$invitation) {
+    //             return response()->json([
+    //                 'status' => 'error',
+    //                 'message' => 'Invitation not found'
+    //             ], 404);
+    //         }
     
-            $guests = Guest::where('invitation_id', $invitation->id)->get();
+    //         $guests = Guest::where('invitation_id', $invitation->id)->get();
     
-            $guestChecked = $guests->where('slug', $guest)->first();
+    //         $guestChecked = $guests->where('slug', $guest)->first();
 
-            if (!$guestChecked) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Guest not found for this invitation'
-                ], 404);
-            }
+    //         if (!$guestChecked) {
+    //             return response()->json([
+    //                 'status' => 'error',
+    //                 'message' => 'Guest not found for this invitation'
+    //             ], 404);
+    //         }
     
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Guest check successful',
-                'data' => $guestChecked
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to check guest',
-                'error' => config('app.debug') ? $e->getMessage() : null
-            ], 500);
-        }
-    }
+    //         return response()->json([
+    //             'status' => 'success',
+    //             'message' => 'Guest check successful',
+    //             'data' => $guestChecked
+    //         ]);
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'status' => 'error',
+    //             'message' => 'Failed to check guest',
+    //             'error' => config('app.debug') ? $e->getMessage() : null
+    //         ], 500);
+    //     }
+    // }
 
     /**
      * Update guest attendance status.
