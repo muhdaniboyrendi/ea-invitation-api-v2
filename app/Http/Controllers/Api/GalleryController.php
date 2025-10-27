@@ -43,36 +43,22 @@ class GalleryController extends Controller
     public function store(Request $request)
     {
         try {
-            // ✅ Check ownership and load package info BEFORE validation
             $invitation = Invitation::with('order.package')
                 ->where('id', $request->invitation_id)
                 ->where('user_id', Auth::id())
                 ->firstOrFail();
 
-            // ✅ Get package_id and determine max images
             $packageId = $invitation->order->package_id ?? null;
             $maxImages = $this->getMaxImagesForPackage($packageId);
 
-            // ✅ Check current gallery count
             $currentGalleryCount = Gallery::where('invitation_id', $invitation->id)->count();
 
-            // ✅ Dynamic validation rules based on package
-            $validationRules = [
-                'invitation_id' => 'required|exists:invitations,id',
-                'images' => 'required|array|min:1',
-                'images.*' => 'required|file|mimes:jpg,jpeg,png,webp|max:2048',
-            ];
-
-            // ✅ Add max validation only if there's a limit
             if ($maxImages !== null) {
-                $validationRules['images']['max'] = $maxImages;
-
-                // ✅ Check if adding new images would exceed the limit
                 $requestedImagesCount = count($request->file('images') ?? []);
                 $totalAfterUpload = $currentGalleryCount + $requestedImagesCount;
 
                 if ($totalAfterUpload > $maxImages) {
-                    $remainingSlots = $maxImages - $currentGalleryCount;
+                    $remainingSlots = max(0, $maxImages - $currentGalleryCount);
                     return response()->json([
                         'status' => 'error',
                         'message' => "Gallery limit exceeded. You can only upload {$remainingSlots} more image(s). Current: {$currentGalleryCount}, Max: {$maxImages}",
@@ -86,8 +72,18 @@ class GalleryController extends Controller
                 }
             }
 
+            $validationRules = [
+                'invitation_id' => 'required|exists:invitations,id',
+                'images' => 'required|array|min:1',
+                'images.*' => 'required|file|mimes:jpg,jpeg,png,webp|max:2048',
+            ];
+
+            if ($maxImages !== null) {
+                $validationRules['images'] .= "|max:{$maxImages}";
+            }
+
             $validator = Validator::make($request->all(), $validationRules, [
-                'images.max' => "Maximum {$maxImages} images allowed for your package.",
+                'images.max' => $maxImages ? "Maximum {$maxImages} images allowed for your package." : "Too many images.",
                 'images.*.mimes' => 'Each image must be a file of type: jpg, jpeg, png, webp.',
                 'images.*.max' => 'Each image must not be greater than 2MB.',
             ]);
@@ -120,17 +116,9 @@ class GalleryController extends Controller
                         $galleryIds[] = $gallery->id;
                     }
 
-                    // ✅ Load galleries with relationships from database
                     $galleries = Gallery::whereIn('id', $galleryIds)->get();
 
                     $message = count($galleries) . ' gallery image(s) created successfully';
-                    
-                    // ✅ Add package limit info to response
-                    $responseData = [
-                        'status' => 'success',
-                        'message' => $message,
-                        'data' => $galleries,
-                    ];
 
                     if ($maxImages !== null) {
                         $newCount = $currentGalleryCount + count($galleries);
@@ -141,7 +129,11 @@ class GalleryController extends Controller
                         ];
                     }
 
-                    return response()->json($responseData, 201);
+                    return response()->json([
+                        'status' => 'success',
+                        'message' => $message,
+                        'data' => $galleries,
+                    ], 201);
 
                 } catch (\Exception $e) {
                     // Cleanup all uploaded images if any error occurs
@@ -162,6 +154,7 @@ class GalleryController extends Controller
                 'status' => 'error',
                 'message' => 'Failed to create gallery',
                 'error' => config('app.debug') ? $e->getMessage() : null
+                // 'trace' => config('app.debug') ? $e->getTraceAsString() : null // Untuk debugging
             ], 500);
         }
     }

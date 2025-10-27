@@ -43,17 +43,14 @@ class VideoController extends Controller
     public function store(Request $request)
     {
         try {
-            // ✅ Check ownership and load package info BEFORE validation
             $invitation = Invitation::with('order.package')
                 ->where('id', $request->invitation_id)
                 ->where('user_id', Auth::id())
                 ->firstOrFail();
 
-            // ✅ Get package_id and determine max videos
             $packageId = $invitation->order->package_id ?? null;
             $maxVideos = $this->getMaxVideosForPackage($packageId);
 
-            // ✅ Special check for package_id == 1 (no videos allowed)
             if ($packageId === 1) {
                 return response()->json([
                     'status' => 'error',
@@ -65,21 +62,17 @@ class VideoController extends Controller
                 ], 422);
             }
 
-            // ✅ Check current video count
             $currentVideoCount = Video::where('invitation_id', $invitation->id)->count();
 
-            // ✅ Dynamic validation rules based on package
             $validationRules = [
                 'invitation_id' => 'required|exists:invitations,id',
                 'videos' => 'required|array|min:1',
-                'videos.*' => 'required|file|mimes:mp4,mov,avi,wmv|max:102400',
+                'videos.*' => 'required|file|mimes:mp4,webm,mov,avi,wmv|max:102400',
             ];
 
-            // ✅ Add max validation only if there's a limit
             if ($maxVideos !== null) {
-                $validationRules['videos']['max'] = $maxVideos;
+                $validationRules['videos'] .= "|max:{$maxVideos}";
 
-                // ✅ Check if adding new videos would exceed the limit
                 $requestedVideosCount = count($request->file('videos') ?? []);
                 $totalAfterUpload = $currentVideoCount + $requestedVideosCount;
 
@@ -132,17 +125,9 @@ class VideoController extends Controller
                         $videoIds[] = $video->id;
                     }
 
-                    // ✅ Load videos with relationships from database
                     $videos = Video::whereIn('id', $videoIds)->get();
 
                     $message = count($videos) . ' video(s) created successfully';
-
-                    // ✅ Add package limit info to response
-                    $responseData = [
-                        'status' => 'success',
-                        'message' => $message,
-                        'data' => $videos,
-                    ];
 
                     if ($maxVideos !== null) {
                         $newCount = $currentVideoCount + count($videos);
@@ -153,7 +138,11 @@ class VideoController extends Controller
                         ];
                     }
 
-                    return response()->json($responseData, 201);
+                    return response()->json([
+                        'status' => 'success',
+                        'message' => $message,
+                        'data' => $videos,
+                    ], 201);
 
                 } catch (\Exception $e) {
                     // Cleanup all uploaded videos if any error occurs
