@@ -19,6 +19,8 @@ return new class extends Migration
             $table->string('thumbnail')->nullable();
             $table->boolean('is_premium')->default(false);
             $table->timestamps();
+
+            $table->index('theme_category_id');
         });
     }
 

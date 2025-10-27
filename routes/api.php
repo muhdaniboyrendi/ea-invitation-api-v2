@@ -210,9 +210,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/check/{orderId}', [InvitationController::class, 'checkByOrderId']);
         Route::get('/{id}', [InvitationController::class, 'show']);
         Route::put('/{id}/complete', [InvitationController::class, 'completeInvitation']);
-        Route::put('/{id}/couple', [InvitationController::class, 'updateCouple']);
         Route::put('/{id}/theme', [InvitationController::class, 'updateTheme']);
-        // Route::put('/{id}', [InvitationController::class, 'update']);
     });
 
     /*

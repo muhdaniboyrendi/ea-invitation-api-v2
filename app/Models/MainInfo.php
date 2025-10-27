@@ -11,6 +11,8 @@ class MainInfo extends Model
         'invitation_id',
         'music_id',
         'main_photo',
+        'groom',
+        'bride',
         'wedding_date',
         'wedding_time',
         'time_zone',

@@ -20,8 +20,6 @@ class InvitationController extends Controller
         $validator = Validator::make($request->all(), [
             'order_id' => 'required',
             'theme_id' => 'required|exists:themes,id',
-            'groom' => 'required|string|max:50',
-            'bride' => 'required|string|max:50'
         ]);
 
         if ($validator->fails()) {
@@ -71,8 +69,6 @@ class InvitationController extends Controller
                     'theme_id' => $request->theme_id,
                     'status' => 'draft',
                     'expiry_date' => $expiryDate,
-                    'groom' => $request->groom,
-                    'bride' => $request->bride,
                 ]);
 
                 return response()->json([
@@ -97,7 +93,7 @@ class InvitationController extends Controller
     public function show(string $id)
     {
         try {
-            $invitation = Invitation::with(['order.package', 'theme', 'guests'])->find($id);
+            $invitation = Invitation::with(['order.package', 'theme', 'mainInfo', 'guests'])->find($id);
 
             if (!$invitation) {
                 return response()->json([
@@ -219,7 +215,7 @@ class InvitationController extends Controller
         try {
             $user = Auth::user();
             
-            $invitations = Invitation::with(['guests'])
+            $invitations = Invitation::with(['mainInfo', 'guests'])
                 ->where('user_id', $user->id)
                 ->latest()
                 ->get();
@@ -282,58 +278,6 @@ class InvitationController extends Controller
     }
 
     /**
-     * Update couple invitation name.
-     */
-    public function updateCouple(Request $request, string $id)
-    {   
-        $validator = Validator::make($request->all(), [
-            'groom' => 'required|string|max:50',
-            'bride' => 'required|string|max:50'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        $user = Auth::user();
-
-        try {
-            return DB::transaction(function () use ($user, $request, $id) {
-                $invitation = Invitation::findOrFail($id);
-
-                if ($invitation->user_id !== $user->id) {
-                    return response()->json([
-                        'status' => 'error',
-                        'message' => 'Forbidden: You do not have permission to update this invitation'
-                    ], 403);
-                }
-
-                $invitation->update([
-                    'groom' => $request->groom,
-                    'bride' => $request->bride,
-                ]);
-
-                return response()->json([
-                    'status' => 'success',
-                    'message' => 'Invitation created successfully',
-                    'data' => $invitation
-                ], 201);
-            });
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to create invitation',
-                'error' => config('app.debug') ? $e->getMessage() : null
-            ], 500);
-        }
-    }
-
-    /**
      * Update invitation theme.
      */
     public function updateTheme(Request $request, string $id)
@@ -349,8 +293,6 @@ class InvitationController extends Controller
                 'errors' => $validator->errors()
             ], 422);
         }
-
-        $user = Auth::user();
 
         if ($validator->fails()) {
             return response()->json([

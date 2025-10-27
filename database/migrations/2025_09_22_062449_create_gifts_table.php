@@ -18,6 +18,8 @@ return new class extends Migration
             $table->string('account_number', 50);
             $table->string('account_holder', 100);
             $table->timestamps();
+
+            $table->index('invitation_id');
         });
     }
 

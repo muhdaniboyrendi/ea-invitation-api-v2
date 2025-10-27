@@ -26,15 +26,27 @@ class Guest extends Model
                 $guest->slug = static::generateUniqueSlug($guest->name);
             }
         });
+
+        static::updating(function ($guest) {
+            // Cek apakah name berubah
+            if ($guest->isDirty('name')) {
+                // Generate slug baru berdasarkan name yang baru
+                $guest->slug = static::generateUniqueSlug($guest->name, $guest->id);
+            }
+        });
     }
 
-    public static function generateUniqueSlug($name)
+    public static function generateUniqueSlug($name, $ignoreId = null)
     {
         $slug = Str::slug($name);
         $originalSlug = $slug;
         $count = 1;
 
-        while (static::where('slug', $slug)->exists()) {
+        while (static::where('slug', $slug)
+            ->when($ignoreId, function ($query) use ($ignoreId) {
+                return $query->where('id', '!=', $ignoreId);
+            })
+            ->exists()) {
             $slug = $originalSlug . '-' . $count;
             $count++;
         }

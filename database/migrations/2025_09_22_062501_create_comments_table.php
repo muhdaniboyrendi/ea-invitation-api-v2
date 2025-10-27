@@ -17,6 +17,8 @@ return new class extends Migration
             $table->string('name', 100);
             $table->text('message');
             $table->timestamps();
+
+            $table->index('invitation_id');
         });
     }
 

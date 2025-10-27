@@ -16,6 +16,8 @@ return new class extends Migration
             $table->foreignId('invitation_id')->constrained()->onDelete('cascade');
             $table->string('image');
             $table->timestamps();
+
+            $table->index('invitation_id');
         });
     }
 

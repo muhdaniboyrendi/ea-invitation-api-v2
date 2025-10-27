@@ -19,6 +19,8 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->string('thumbnail')->nullable();
             $table->timestamps();
+
+            $table->index('invitation_id');
         });
     }
 

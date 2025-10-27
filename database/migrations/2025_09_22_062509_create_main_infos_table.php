@@ -17,11 +17,16 @@ return new class extends Migration
             $table->unsignedBigInteger('music_id')->nullable();
             
             $table->string('main_photo')->nullable();
+            $table->string('groom');
+            $table->string('bride');
             $table->date('wedding_date');
             $table->time('wedding_time');
             $table->enum('time_zone', ['WIB', 'WITA', 'WIT'])->default('WIB');
             $table->string('custom_backsound')->nullable();
             $table->timestamps();
+
+            $table->index('invitation_id');
+            $table->index('music_id');
         });
     }
 

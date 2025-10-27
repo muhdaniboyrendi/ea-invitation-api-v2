@@ -23,6 +23,11 @@ return new class extends Migration
             $table->string('midtrans_url')->nullable();
             $table->string('midtrans_transaction_id')->nullable();
             $table->timestamps();
+
+            $table->index('user_id');
+            $table->index('package_id');
+            $table->index('order_id');
+            $table->index('payment_status');
         });
     }
 

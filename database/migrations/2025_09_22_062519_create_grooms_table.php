@@ -20,6 +20,8 @@ return new class extends Migration
             $table->string('instagram');
             $table->string('photo')->nullable();
             $table->timestamps();
+
+            $table->index('invitation_id');
         });
     }
 
