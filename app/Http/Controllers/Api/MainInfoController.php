@@ -23,8 +23,6 @@ class MainInfoController extends Controller
             'invitation_id' => 'required|exists:invitations,id',
             'music_id' => 'nullable|exists:music,id',
             'main_photo' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:2048',
-            'groom' => 'required|string|max:50',
-            'bride' => 'required|string|max:50',
             'wedding_date' => 'required|date|after_or_equal:' . now()->toDateString(),
             'wedding_time' => 'required|date_format:H:i',
             'time_zone' => 'required|in:WIB,WITA,WIT',
@@ -153,8 +151,6 @@ class MainInfoController extends Controller
         $validator = Validator::make($request->all(), [
             'music_id' => 'nullable|exists:music,id',
             'main_photo' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:2048',
-            'groom' => 'required|string|max:50',
-            'bride' => 'required|string|max:50',
             'wedding_date' => 'required|date|after_or_equal:' . now()->toDateString(),
             'wedding_time' => 'required|date_format:H:i',
             'time_zone' => 'required|in:WIB,WITA,WIT',

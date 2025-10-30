@@ -106,7 +106,7 @@ Route::get('/love-stories/{invitationId}', [LoveStoryController::class, 'index']
 Route::get('/gifts/{invitationId}', [GiftController::class, 'index']);
 Route::get('/galleries/{invitationId}', [GalleryController::class, 'index']);
 Route::get('/videos/{invitationId}', [VideoController::class, 'index']);
-// Route::get('/invitations/{slug}/part', [InvitationController::class, 'getInvitationBySlug']);
+Route::get('/invitations/{slug}/check', [InvitationController::class, 'checkInvitationBySlug']);
 // Route::get('/invitations/{slug}/all', [InvitationController::class, 'getInvitationDetailBySlug']);
 
 /*
@@ -210,6 +210,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/check/{orderId}', [InvitationController::class, 'checkByOrderId']);
         Route::get('/{id}', [InvitationController::class, 'show']);
         Route::put('/{id}/complete', [InvitationController::class, 'completeInvitation']);
+        Route::put('/{id}/couple', [InvitationController::class, 'updateCouple']);
         Route::put('/{id}/theme', [InvitationController::class, 'updateTheme']);
     });
 

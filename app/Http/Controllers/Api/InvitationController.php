@@ -20,6 +20,8 @@ class InvitationController extends Controller
         $validator = Validator::make($request->all(), [
             'order_id' => 'required',
             'theme_id' => 'required|exists:themes,id',
+            'groom' => 'required|string|max:50',
+            'bride' => 'required|string|max:50',
         ]);
 
         if ($validator->fails()) {
@@ -67,6 +69,8 @@ class InvitationController extends Controller
                     'user_id' => $user->id,
                     'order_id' => $order->id,
                     'theme_id' => $request->theme_id,
+                    'groom' => $request->groom,
+                    'bride' => $request->bride,
                     'status' => 'draft',
                     'expiry_date' => $expiryDate,
                 ]);
@@ -278,12 +282,13 @@ class InvitationController extends Controller
     }
 
     /**
-     * Update invitation theme.
+     * Update invitation couple.
      */
-    public function updateTheme(Request $request, string $id)
+    public function updateCouple(Request $request, string $id)
     {
         $validator = Validator::make($request->all(), [
-            'theme_id' => 'required|exists:themes,id'
+            'groom' => 'required|string|max:50',
+            'bride' => 'required|string|max:50'
         ]);
 
         if ($validator->fails()) {
@@ -293,6 +298,49 @@ class InvitationController extends Controller
                 'errors' => $validator->errors()
             ], 422);
         }
+
+        $user = Auth::user();
+
+        try {
+            return DB::transaction(function () use ($user, $request, $id) {
+                $invitation = Invitation::findOrFail($id);
+
+                if ($invitation->user_id !== $user->id) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Forbidden: You do not have permission to update this invitation'
+                    ], 403);
+                }
+
+                $invitation->update([
+                    'groom' => $request->groom,
+                    'bride' => $request->bride,
+                ]);
+
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Invitation created successfully',
+                    'data' => $invitation
+                ], 201);
+            });
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to create invitation',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
+
+    /**
+     * Update invitation theme.
+     */
+    public function updateTheme(Request $request, string $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'theme_id' => 'required|exists:themes,id'
+        ]);
 
         if ($validator->fails()) {
             return response()->json([
@@ -330,6 +378,36 @@ class InvitationController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to create invitation',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function checkInvitationBySlug(string $slug)
+    {
+        try {
+            $invitation = Invitation::with(['theme'])->where('slug', $slug)->first();
+
+            if (!$invitation) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Invitation not found'
+                ], 404);
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Invitation retrieved successfully',
+                'data' => $invitation
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to retrieve invitation',
                 'error' => config('app.debug') ? $e->getMessage() : null
             ], 500);
         }
