@@ -69,7 +69,6 @@ class ThemeController extends Controller
             'name' => 'required|string|max:255',
             'theme_category_id' => 'required|exists:theme_categories,id',
             'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
-            'link' => 'nullable|string',
             'is_premium' => 'required|boolean'
         ]);
 
@@ -96,7 +95,6 @@ class ThemeController extends Controller
                 $theme = Theme::create([
                     'name' => $request->name,
                     'theme_category_id' => $request->theme_category_id,
-                    'link' => $request->link,
                     'thumbnail' => $thumbnailPath,
                     'is_premium' => $isPremium
                 ]);
@@ -167,7 +165,6 @@ class ThemeController extends Controller
             'name' => 'required|string|max:255',
             'theme_category_id' => 'required|exists:theme_categories,id',
             'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
-            'link' => 'nullable|string',
             'is_premium' => 'required|boolean'
         ]);
 
@@ -197,7 +194,6 @@ class ThemeController extends Controller
                 $theme->update([
                     'name' => $request->name,
                     'theme_category_id' => $request->theme_category_id,
-                    'link' => $request->link,
                     'is_premium' => $request->is_premium
                 ]);
 

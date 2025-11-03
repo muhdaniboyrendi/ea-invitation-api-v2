@@ -199,44 +199,44 @@ class GuestController extends Controller
         }
     }
 
-    // public function checkGuest($slug, Request $request)
-    // {
-    //     try {
-    //         $guest = $request->query('guest');
+    public function checkGuest($slug, Request $request)
+    {
+        try {
+            $guest = $request->query('guest');
     
-    //         $invitation = Invitation::where('slug', $slug)->first();
+            $invitation = Invitation::where('slug', $slug)->first();
     
-    //         if (!$invitation) {
-    //             return response()->json([
-    //                 'status' => 'error',
-    //                 'message' => 'Invitation not found'
-    //             ], 404);
-    //         }
+            if (!$invitation) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Invitation not found'
+                ], 404);
+            }
     
-    //         $guests = Guest::where('invitation_id', $invitation->id)->get();
+            $guests = Guest::where('invitation_id', $invitation->id)->get();
     
-    //         $guestChecked = $guests->where('slug', $guest)->first();
+            $guestChecked = $guests->where('slug', $guest)->first();
 
-    //         if (!$guestChecked) {
-    //             return response()->json([
-    //                 'status' => 'error',
-    //                 'message' => 'Guest not found for this invitation'
-    //             ], 404);
-    //         }
+            if (!$guestChecked) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Guest not found for this invitation'
+                ], 404);
+            }
     
-    //         return response()->json([
-    //             'status' => 'success',
-    //             'message' => 'Guest check successful',
-    //             'data' => $guestChecked
-    //         ]);
-    //     } catch (\Exception $e) {
-    //         return response()->json([
-    //             'status' => 'error',
-    //             'message' => 'Failed to check guest',
-    //             'error' => config('app.debug') ? $e->getMessage() : null
-    //         ], 500);
-    //     }
-    // }
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Guest check successful',
+                'data' => $guestChecked
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to check guest',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
 
     /**
      * Update guest attendance status.

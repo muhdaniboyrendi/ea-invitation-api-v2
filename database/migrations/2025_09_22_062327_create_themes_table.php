@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('theme_category_id')->constrained()->onDelete('cascade');
             $table->string('name');
-            $table->string('link')->nullable();
+            $table->string('slug')->nullable();
             $table->string('thumbnail')->nullable();
             $table->boolean('is_premium')->default(false);
             $table->timestamps();

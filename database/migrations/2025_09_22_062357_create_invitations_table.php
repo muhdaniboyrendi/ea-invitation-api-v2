@@ -20,8 +20,8 @@ return new class extends Migration
 
             $table->enum('status', ['draft', 'published', 'expired'])->default('draft');
             $table->date('expiry_date')->nullable();
-            $table->string('groom')->nullable();
-            $table->string('bride')->nullable();
+            $table->string('groom_name')->nullable();
+            $table->string('bride_name')->nullable();
             $table->string('slug')->nullable();
             $table->timestamps();
 

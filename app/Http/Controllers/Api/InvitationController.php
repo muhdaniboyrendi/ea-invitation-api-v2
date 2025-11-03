@@ -20,8 +20,8 @@ class InvitationController extends Controller
         $validator = Validator::make($request->all(), [
             'order_id' => 'required',
             'theme_id' => 'required|exists:themes,id',
-            'groom' => 'required|string|max:50',
-            'bride' => 'required|string|max:50',
+            'groom_name' => 'required|string|max:50',
+            'bride_name' => 'required|string|max:50',
         ]);
 
         if ($validator->fails()) {
@@ -69,8 +69,8 @@ class InvitationController extends Controller
                     'user_id' => $user->id,
                     'order_id' => $order->id,
                     'theme_id' => $request->theme_id,
-                    'groom' => $request->groom,
-                    'bride' => $request->bride,
+                    'groom_name' => $request->groom_name,
+                    'bride_name' => $request->bride_name,
                     'status' => 'draft',
                     'expiry_date' => $expiryDate,
                 ]);
@@ -248,7 +248,7 @@ class InvitationController extends Controller
 
         try {
             return DB::transaction(function () use ($user, $id) {
-                $invitation = Invitation::findOrFail($id);
+                $invitation = Invitation::with('order.package')->findOrFail($id);
 
                 // Authorization check
                 if ($invitation->user_id !== $user->id) {
@@ -287,8 +287,8 @@ class InvitationController extends Controller
     public function updateCouple(Request $request, string $id)
     {
         $validator = Validator::make($request->all(), [
-            'groom' => 'required|string|max:50',
-            'bride' => 'required|string|max:50'
+            'groom_name' => 'required|string|max:50',
+            'bride_name' => 'required|string|max:50'
         ]);
 
         if ($validator->fails()) {
@@ -313,8 +313,8 @@ class InvitationController extends Controller
                 }
 
                 $invitation->update([
-                    'groom' => $request->groom,
-                    'bride' => $request->bride,
+                    'groom_name' => $request->groom_name,
+                    'bride_name' => $request->bride_name,
                 ]);
 
                 return response()->json([
@@ -424,13 +424,13 @@ class InvitationController extends Controller
                 ->with([
                     'theme', 
                     'guests', 
-                    'mainInfo.backsound', 
-                    'groomInfo', 
-                    'brideInfo', 
+                    'mainInfo.music', 
+                    'groom', 
+                    'bride', 
                     'events', 
                     'loveStories', 
-                    'galleryImages', 
-                    'giftInfo', 
+                    'galleries', 
+                    'gifts', 
                     'comments'
                 ])
                 ->first();

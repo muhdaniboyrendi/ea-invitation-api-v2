@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 class Invitation extends Model
 {
@@ -15,14 +16,37 @@ class Invitation extends Model
         'theme_id',
         'status',
         'expiry_date',
-        'groom',
-        'bride',
+        'groom_name',
+        'bride_name',
         'slug'
     ];
 
     protected $casts = [
         'expiry_date' => 'date',
     ];
+
+    /**
+     * Boot method untuk auto-generate dan update slug
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Generate slug saat creating (insert baru)
+        static::creating(function ($invitation) {
+            if (empty($invitation->slug)) {
+                $invitation->slug = $invitation->generateUniqueSlug();
+            }
+        });
+
+        // Update slug saat updating (jika groom_name atau bride_name berubah)
+        static::updating(function ($invitation) {
+            // Cek apakah groom_name atau bride_name berubah
+            if ($invitation->isDirty('groom_name') || $invitation->isDirty('bride_name')) {
+                $invitation->slug = $invitation->generateUniqueSlug();
+            }
+        });
+    }
 
     public function user(): BelongsTo
     {
@@ -89,38 +113,45 @@ class Invitation extends Model
      */
     public function generateUniqueSlug()
     {
-        if (empty($this->groom) && empty($this->bride)) {
+        if (empty($this->groom_name) && empty($this->bride_name)) {
             $baseSlug = 'invitation-' . time();
-        } elseif (empty($this->groom)) {
-            $baseSlug = $this->createSlug($this->bride);
-        } elseif (empty($this->bride)) {
-            $baseSlug = $this->createSlug($this->groom);
+        } elseif (empty($this->groom_name)) {
+            $baseSlug = Str::slug($this->bride_name);
+        } elseif (empty($this->bride_name)) {
+            $baseSlug = Str::slug($this->groom_name);
         } else {
-            $baseSlug = $this->createSlug($this->groom . ' & ' . $this->bride);
+            $baseSlug = Str::slug($this->groom_name . '-' . $this->bride_name);
         }
         
         $slug = $baseSlug;
         $counter = 1;
         
-        while (static::where('slug', $slug)->where('id', '!=', $this->id)->exists()) {
+        // Cek apakah slug sudah ada (exclude ID saat ini untuk update)
+        $query = static::where('slug', $slug);
+        
+        if ($this->exists) {
+            $query->where('id', '!=', $this->id);
+        }
+        
+        while ($query->exists()) {
             $slug = $baseSlug . '-' . $counter;
             $counter++;
+            
+            $query = static::where('slug', $slug);
+            if ($this->exists) {
+                $query->where('id', '!=', $this->id);
+            }
         }
         
         return $slug;
     }
 
     /**
-     * Convert string menjadi slug format
+     * Convert string menjadi slug format (deprecated - gunakan Str::slug)
+     * Kept for backward compatibility
      */
     private function createSlug($string)
     {
-        $slug = strtolower(trim($string));
-        $slug = preg_replace('/\s+/', '-', $slug);
-        $slug = preg_replace('/[^a-z0-9\-]/', '', $slug);
-        $slug = preg_replace('/-+/', '-', $slug);
-        $slug = trim($slug, '-');
-        
-        return $slug;
+        return Str::slug($string);
     }
 }

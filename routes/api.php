@@ -83,7 +83,7 @@ Route::prefix('musics')->group(function () {
 });
 
 // Guests (Public)
-Route::put('/guests/{id}/rsvp', [GuestController::class, 'updateAttendance']);
+Route::put('/guests/{guest}/rsvp', [GuestController::class, 'updateAttendance']);
 Route::get('/guests/{invitationId}', [GuestController::class, 'getGuestsByInvitationId']);
 Route::get('/guest/{slug}', [GuestController::class, 'checkGuest']);
 
@@ -107,7 +107,7 @@ Route::get('/gifts/{invitationId}', [GiftController::class, 'index']);
 Route::get('/galleries/{invitationId}', [GalleryController::class, 'index']);
 Route::get('/videos/{invitationId}', [VideoController::class, 'index']);
 Route::get('/invitations/{slug}/check', [InvitationController::class, 'checkInvitationBySlug']);
-// Route::get('/invitations/{slug}/all', [InvitationController::class, 'getInvitationDetailBySlug']);
+Route::get('/invitations/{slug}/all', [InvitationController::class, 'getInvitationDetailBySlug']);
 
 /*
 |--------------------------------------------------------------------------
