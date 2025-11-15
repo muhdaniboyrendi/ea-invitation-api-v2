@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\GiftController;
+use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\BrideController;
 use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\GroomController;
@@ -139,6 +140,16 @@ Route::middleware('auth:sanctum')->group(function () {
                 ]
             ]);
         })->name('status');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | User Management
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('users')->group(function () {
+        Route::put('/profile', [UserController::class, 'updateProfile']);
+        Route::put('/password', [UserController::class, 'updatePassword']);
     });
 
     /*

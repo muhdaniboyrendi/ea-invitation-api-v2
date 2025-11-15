@@ -108,6 +108,11 @@ class Invitation extends Model
         return $this->hasMany(Comment::class);
     }
 
+    public function videos(): HasMany
+    {
+        return $this->hasMany(Video::class);
+    }
+
     /**
      * Generate unique slug berdasarkan nama groom dan bride
      */

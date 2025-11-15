@@ -20,6 +20,13 @@ class EventController extends Controller
         try {
             $events = Event::where('invitation_id', $invitationId)->get();
 
+            if ($events->isEmpty()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Event list info not found'
+                ], 404);
+            }
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Events retrieved successfully',

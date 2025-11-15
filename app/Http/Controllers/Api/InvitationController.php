@@ -431,7 +431,8 @@ class InvitationController extends Controller
                     'loveStories', 
                     'galleries', 
                     'gifts', 
-                    'comments'
+                    'comments',
+                    'videos'
                 ])
                 ->first();
 
