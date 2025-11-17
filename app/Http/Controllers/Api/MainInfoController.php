@@ -195,6 +195,11 @@ class MainInfoController extends Controller
                     $this->deleteFile($oldFiles['custom_backsound']);
                 }
 
+                if ($request->has('music_id')) {
+                    $this->deleteFile($oldFiles['custom_backsound']);
+                    $validated['custom_backsound'] = null;
+                }
+
                 $mainInfo->update($validated);
                 $mainInfo->load(['invitation', 'music']);
 
