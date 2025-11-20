@@ -17,7 +17,7 @@ class PackageSeeder extends Seeder
             'name' => 'Economy',
             'price' => 100000,
             'features' => [
-                '100 tamu undangan + grup',
+                '10 tamu undangan + grup',
                 '4 foto galeri (max)',
                 'Informasi acara',
                 'Background musik (list)',
@@ -34,7 +34,7 @@ class PackageSeeder extends Seeder
             'name' => 'Premium',
             'price' => 150000,
             'features' => [
-                '500 tamu undangan + grup',
+                '100 tamu undangan + grup',
                 '10 foto galeri (max)',
                 '1 video',
                 'Informasi acara',
@@ -54,9 +54,9 @@ class PackageSeeder extends Seeder
             'name' => 'Business',
             'price' => 250000,
             'features' => [
-                'Unlimited tamu undangan + grup',
-                '50 foto galeri (max)',
-                '10 video (max)',
+                '500 tamu undangan + grup',
+                '20 foto galeri (max)',
+                '5 video (max)',
                 'Informasi acara',
                 'Background musik custom',
                 'Timer countdown',
