@@ -1,16 +1,23 @@
 services:
+  # Laravel Application dengan FrankenPHP
   app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: laravel_octane_app
+    container_name: laravel-frankenphp
+    restart: unless-stopped
+    # SOLUSI: Hapus --workers dan --max-requests, tambahkan --host=0.0.0.0
+    command:
+      - "php"
+      - "artisan"
+      - "octane:frankenphp"
+      - "--host=0.0.0.0"
+      - "--port=8000"
     ports:
       - "8000:8000"
     volumes:
       - .:/app
-      - /app/vendor
-      - /app/node_modules
-      - ./custom-entrypoint.sh:/app/docker-entrypoint.sh
+      - storage-data:/app/storage/app
     environment:
       - APP_ENV=local
       - APP_DEBUG=true
@@ -18,54 +25,44 @@ services:
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_DATABASE=laravel
-      - DB_USERNAME=laravel
-      - DB_PASSWORD=secret
+      - DB_USERNAME=laravel_user
+      - DB_PASSWORD=secret_password
+      # PENTING: Disable auto HTTPS untuk development
+      - CADDY_GLOBAL_OPTIONS=auto_https off
     depends_on:
       postgres:
         condition: service_healthy
     networks:
-      - laravel
-    restart: unless-stopped
+      - laravel-network
 
+  # PostgreSQL Database
   postgres:
     image: postgres:16-alpine
-    container_name: laravel_postgres
+    container_name: laravel-postgres
+    restart: unless-stopped
     ports:
       - "5432:5432"
     environment:
       POSTGRES_DB: laravel
-      POSTGRES_USER: laravel
-      POSTGRES_PASSWORD: secret
+      POSTGRES_USER: laravel_user
+      POSTGRES_PASSWORD: secret_password
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U laravel"]
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready -U laravel_user -d laravel"]
+      interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - laravel
-    restart: unless-stopped
-
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: laravel_pgadmin
-    ports:
-      - "5050:80"
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: admin
-    depends_on:
-      - postgres
-    networks:
-      - laravel
-    restart: unless-stopped
+      - laravel-network
 
 volumes:
-  postgres_data:
+  postgres-data:
+    driver: local
+  storage-data:
     driver: local
 
 networks:
-  laravel:
+  laravel-network:
     driver: bridge
