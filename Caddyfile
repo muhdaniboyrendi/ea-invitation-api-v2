@@ -1,0 +1,33 @@
+{
+    frankenphp {
+        # Gunakan nilai numerik, bukan "auto"
+        num_threads 4
+        
+        # Konfigurasi PHP.ini melalui Caddyfile
+        php_ini {
+            upload_max_filesize 100M
+            post_max_size 105M
+            memory_limit 512M
+            max_execution_time 300
+            max_input_time 300
+        }
+    }
+    
+    # Disable auto HTTPS untuk development
+    auto_https off
+}
+
+:8000
+
+# Set request body max size untuk Caddy
+request_body {
+    max_size 105MB
+}
+
+root * /app/public
+
+# Encode responses
+encode zstd gzip
+
+# PHP Server directive
+php_server

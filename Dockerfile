@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install PHP extensions
+# Install PHP extensions (PENTING: tambahkan pcntl untuk Octane)
 RUN install-php-extensions \
     pdo_pgsql \
     pgsql \
@@ -28,23 +28,20 @@ RUN install-php-extensions \
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Copy custom php.ini
-COPY docker/php.ini /usr/local/etc/php/conf.d/custom.ini
-
 # Set working directory
 WORKDIR /app
 
 # Copy existing application
 COPY . /app
 
+# Copy Caddyfile ke dalam container
+COPY Caddyfile /app/Caddyfile
+
 # Install dependencies Laravel
-RUN composer install --optimize-autoloader --no-interaction
+RUN composer install --optimize-autoloader --no-interaction --no-dev
 
 # Set permissions
 RUN chown -R www-data:www-data /app/storage /app/bootstrap/cache
 
 # Expose port
 EXPOSE 8000
-
-# CATATAN: Untuk Docker Compose, CMD tidak diperlukan karena akan
-# di-override oleh entrypoint di docker-compose.yml

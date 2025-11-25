@@ -1,18 +1,12 @@
 services:
-  # Laravel Application dengan FrankenPHP
   app:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: laravel-frankenphp
     restart: unless-stopped
-    # SOLUSI: Hapus --workers dan --max-requests, tambahkan --host=0.0.0.0
-    command:
-      - "php"
-      - "artisan"
-      - "octane:frankenphp"
-      - "--host=0.0.0.0"
-      - "--port=8000"
+    # Gunakan entrypoint, bukan command
+    entrypoint: php artisan octane:frankenphp --host=0.0.0.0 --port=8000 --caddyfile=/app/Caddyfile
     ports:
       - "8000:8000"
     volumes:
@@ -27,8 +21,8 @@ services:
       - DB_DATABASE=laravel
       - DB_USERNAME=laravel_user
       - DB_PASSWORD=secret_password
-      # PENTING: Disable auto HTTPS untuk development
-      - CADDY_GLOBAL_OPTIONS=auto_https off
+      # SERVER_NAME untuk FrankenPHP
+      - SERVER_NAME=:8000
     depends_on:
       postgres:
         condition: service_healthy
