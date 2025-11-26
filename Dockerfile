@@ -1,6 +1,6 @@
 FROM dunglas/frankenphp:latest-php8.3
 
-# Install dependencies yang diperlukan
+# Install dependencies
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -28,22 +28,30 @@ RUN install-php-extensions \
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# ===== KONFIGURASI PHP =====
-# Copy base php.ini dari template production
+# ===== CRITICAL: Set PHP Configuration =====
+# FrankenPHP worker mode doesn't read php.ini at runtime
+# So we need to set it at build time AND use ini_set() at runtime
+
+# Copy php.ini-production as base
 RUN cp $PHP_INI_DIR/php.ini-production $PHP_INI_DIR/php.ini
 
-# Copy custom php.ini configuration
+# Create and copy custom php.ini
 COPY docker/php.ini $PHP_INI_DIR/conf.d/zz-custom.ini
-# Prefix 'zz-' memastikan file ini di-load terakhir, override config sebelumnya
-# ===========================
+
+# IMPORTANT: Also set as environment variables for FrankenPHP
+ENV PHP_UPLOAD_MAX_FILESIZE=25M \
+    PHP_POST_MAX_SIZE=30M \
+    PHP_MEMORY_LIMIT=512M \
+    PHP_MAX_EXECUTION_TIME=300
+# ===========================================
 
 # Set working directory
 WORKDIR /app
 
-# Copy existing application
+# Copy application
 COPY . /app
 
-# Install dependencies Laravel
+# Install dependencies
 RUN composer install --optimize-autoloader --no-interaction
 
 # Set permissions

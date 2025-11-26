@@ -13,12 +13,20 @@ services:
             - "--port=8000"
             - "--workers=auto"
             - "--max-requests=500"
+            - "--caddyfile=/app/Caddyfile" # ← TAMBAHKAN INI
         ports:
             - "8000:8000"
         volumes:
             - .:/app
+            - ./Caddyfile:/app/Caddyfile:ro # ← MOUNT CADDYFILE
             - storage-data:/app/storage/app
         environment:
+            # Environment variables untuk Caddyfile
+            - APP_PUBLIC_PATH=/app/public
+            - CADDY_SERVER_SERVER_NAME=:8000
+            - CADDY_SERVER_LOG_LEVEL=info
+            - CADDY_SERVER_WORKER_COUNT=auto
+            # Laravel environment
             - APP_ENV=local
             - APP_DEBUG=true
             - DB_CONNECTION=pgsql
@@ -27,7 +35,6 @@ services:
             - DB_DATABASE=laravel
             - DB_USERNAME=laravel_user
             - DB_PASSWORD=secret_password
-            # Midtrans Configuration
             - MIDTRANS_SERVER_KEY=${MIDTRANS_SERVER_KEY}
             - MIDTRANS_CLIENT_KEY=${MIDTRANS_CLIENT_KEY}
             - MIDTRANS_MERCHANT_ID=${MIDTRANS_MERCHANT_ID}

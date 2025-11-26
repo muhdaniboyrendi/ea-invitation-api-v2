@@ -66,8 +66,8 @@ return [
 
     'listeners' => [
         WorkerStarting::class => [
-            EnsureUploadedFilesAreValid::class,
-            EnsureUploadedFilesCanBeMoved::class,
+            // EnsureUploadedFilesAreValid::class,
+            // EnsureUploadedFilesCanBeMoved::class,
         ],
 
         RequestReceived::class => [
@@ -81,7 +81,7 @@ return [
         ],
 
         RequestTerminated::class => [
-            // FlushUploadedFiles::class,
+            FlushUploadedFiles::class,
         ],
 
         TaskReceived::class => [
