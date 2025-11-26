@@ -14,6 +14,20 @@ use Illuminate\Support\Facades\Validator;
 class MusicController extends Controller
 {
     /**
+     * Generate sanitized filename with EA-inv prefix
+     */
+    private function generateSafeFilename($file)
+    {
+        $extension = $file->getClientOriginalExtension();
+        
+        $uniqueId = time() . '_' . Str::random(10);
+        
+        $fileName = 'EA-inv_' . $uniqueId . '.' . $extension;
+        
+        return $fileName;
+    }
+
+    /**
      * Display a listing of the resource.
      */
     public function index()
@@ -64,64 +78,28 @@ class MusicController extends Controller
             ], 422);
         }
 
-        $validated = $validator->validated();
-
         try {
-            return DB::transaction(function () use ($request, $validated) {
+            return DB::transaction(function () use ($request) {
+                $audioPath = null;
+                $thumbnailPath = null;
+
                 if ($request->hasFile('audio')) {
                     $audioFile = $request->file('audio');
-                    $audioExtension = $audioFile->getClientOriginalExtension();
-                    
-                    // Validasi tambahan untuk memastikan file benar-benar audio
-                    $audioMimeType = $audioFile->getMimeType();
-                    $allowedMimeTypes = [
-                        'audio/mpeg',        // MP3
-                        'audio/wav',         // WAV
-                        'audio/ogg',         // OGG
-                        'audio/mp4',         // M4A, MP4
-                        'audio/x-m4a',       // M4A
-                        'audio/webm',        // WebM
-                        'video/webm',        // WebM (sometimes detected as video)
-                    ];
-                    
-                    if (!in_array($audioMimeType, $allowedMimeTypes)) {
-                        throw new \Exception('Invalid audio file type: ' . $audioMimeType);
-                    }
-                    
-                    $audioUuid = Str::uuid();
-                    $audioFileName = $audioUuid . '.' . $audioExtension;
-                    
-                    $validated['audio'] = $audioFile->storeAs('musics', $audioFileName, 'public');
+                    $audioName = $this->generateSafeFilename($audioFile);
+                    $audioPath = $audioFile->storeAs('musics', $audioName, 'public');
                 }
         
                 if ($request->hasFile('thumbnail')) {
                     $thumbnailFile = $request->file('thumbnail');
-                    $thumbnailExtension = $thumbnailFile->getClientOriginalExtension();
-                    
-                    // Validasi tambahan untuk memastikan file benar-benar gambar
-                    $thumbnailMimeType = $thumbnailFile->getMimeType();
-                    $allowedImageMimeTypes = [
-                        'image/jpeg',
-                        'image/jpg',
-                        'image/png',
-                        'image/webp',
-                    ];
-                    
-                    if (!in_array($thumbnailMimeType, $allowedImageMimeTypes)) {
-                        throw new \Exception('Invalid image file type: ' . $thumbnailMimeType);
-                    }
-                    
-                    $thumbnailUuid = Str::uuid();
-                    $thumbnailFileName = $thumbnailUuid . '.' . $thumbnailExtension;
-                    
-                    $validated['thumbnail'] = $thumbnailFile->storeAs('musics/thumbnails', $thumbnailFileName, 'public');
+                    $thumbnailName = $this->generateSafeFilename($thumbnailFile);
+                    $thumbnailPath = $thumbnailFile->storeAs('musics/thumbnails', $thumbnailName, 'public');
                 }
 
                 $music = Music::create([
-                    'name' => $validated['name'],
-                    'artist' => $validated['artist'] ?? null,
-                    'audio' => $validated['audio'] ?? null,
-                    'thumbnail' => $validated['thumbnail'] ?? null,
+                    'name' => $request->name,
+                    'artist' => $request->artist,
+                    'audio' => $audioPath,
+                    'thumbnail' => $thumbnailPath,
                 ]);
 
                 return response()->json([
@@ -131,15 +109,6 @@ class MusicController extends Controller
                 ], 201);
             });
         } catch (\Exception $e) {
-            // Clean up uploaded files on error
-            if (isset($validated['audio']) && Storage::disk('public')->exists($validated['audio'])) {
-                Storage::disk('public')->delete($validated['audio']);
-            }
-            
-            if (isset($validated['thumbnail']) && Storage::disk('public')->exists($validated['thumbnail'])) {
-                Storage::disk('public')->delete($validated['thumbnail']);
-            }
-
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to create music',

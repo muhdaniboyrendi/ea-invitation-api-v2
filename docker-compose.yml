@@ -1,62 +1,70 @@
 services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: laravel-frankenphp
-    restart: unless-stopped
-    # Gunakan entrypoint, bukan command
-    entrypoint: php artisan octane:frankenphp --host=0.0.0.0 --port=8000 --caddyfile=/app/Caddyfile
-    ports:
-      - "8000:8000"
-    volumes:
-      - .:/app
-      - storage-data:/app/storage/app
-    environment:
-      - APP_ENV=local
-      - APP_DEBUG=true
-      - DB_CONNECTION=pgsql
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_DATABASE=laravel
-      - DB_USERNAME=laravel_user
-      - DB_PASSWORD=secret_password
-      # SERVER_NAME untuk FrankenPHP
-      - SERVER_NAME=:8000
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - laravel-network
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: laravel-frankenphp
+        restart: unless-stopped
+        command:
+            - "php"
+            - "artisan"
+            - "octane:frankenphp"
+            - "--host=0.0.0.0"
+            - "--port=8000"
+            - "--workers=auto"
+            - "--max-requests=500"
+        ports:
+            - "8000:8000"
+        volumes:
+            - .:/app
+            - storage-data:/app/storage/app
+        environment:
+            - APP_ENV=local
+            - APP_DEBUG=true
+            - DB_CONNECTION=pgsql
+            - DB_HOST=postgres
+            - DB_PORT=5432
+            - DB_DATABASE=laravel
+            - DB_USERNAME=laravel_user
+            - DB_PASSWORD=secret_password
+            # Midtrans Configuration
+            - MIDTRANS_SERVER_KEY=${MIDTRANS_SERVER_KEY}
+            - MIDTRANS_CLIENT_KEY=${MIDTRANS_CLIENT_KEY}
+            - MIDTRANS_MERCHANT_ID=${MIDTRANS_MERCHANT_ID}
+            - MIDTRANS_IS_PRODUCTION=${MIDTRANS_IS_PRODUCTION}
+        depends_on:
+            postgres:
+                condition: service_healthy
+        networks:
+            - laravel-network
 
-  # PostgreSQL Database
-  postgres:
-    image: postgres:16-alpine
-    container_name: laravel-postgres
-    restart: unless-stopped
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_DB: laravel
-      POSTGRES_USER: laravel_user
-      POSTGRES_PASSWORD: secret_password
-      PGDATA: /var/lib/postgresql/data/pgdata
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U laravel_user -d laravel"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - laravel-network
+    postgres:
+        image: postgres:16-alpine
+        container_name: laravel-postgres
+        restart: unless-stopped
+        ports:
+            - "5432:5432"
+        environment:
+            POSTGRES_DB: laravel
+            POSTGRES_USER: laravel_user
+            POSTGRES_PASSWORD: secret_password
+            PGDATA: /var/lib/postgresql/data/pgdata
+        volumes:
+            - postgres-data:/var/lib/postgresql/data
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U laravel_user -d laravel"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        networks:
+            - laravel-network
 
 volumes:
-  postgres-data:
-    driver: local
-  storage-data:
-    driver: local
+    postgres-data:
+        driver: local
+    storage-data:
+        driver: local
 
 networks:
-  laravel-network:
-    driver: bridge
+    laravel-network:
+        driver: bridge

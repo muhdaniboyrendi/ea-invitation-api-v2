@@ -51,7 +51,7 @@ class InvitationController extends Controller
         }
 
         // Check duplicate invitation
-        $existingInvitation = Invitation::where('order_id', $request->order_id)->exists();
+        $existingInvitation = Invitation::where('order_id', $order->id)->exists();
 
         if ($existingInvitation) {
             return response()->json([
