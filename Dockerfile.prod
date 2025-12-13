@@ -1,0 +1,81 @@
+# --- Stage 1: Build Dependencies ---
+FROM composer:2 AS vendor
+
+WORKDIR /app
+
+# Copy hanya file yang diperlukan untuk composer install
+COPY database/ database/
+COPY composer.json composer.lock ./
+
+# Install dependencies dengan strategi yang benar:
+# 1. --no-autoloader: Skip autoload generation karena source belum tersedia
+# 2. --no-scripts: Skip post-install scripts (termasuk package discovery)
+# 3. Akan di-run ulang setelah source code tersedia
+RUN composer install \
+    --no-dev \
+    --ignore-platform-reqs \
+    --no-interaction \
+    --no-progress \
+    --no-autoloader \
+    --no-scripts \
+    --prefer-dist
+
+# --- Stage 2: Build Autoloader ---
+FROM composer:2 AS autoloader
+
+WORKDIR /app
+
+# Copy vendor dari stage sebelumnya
+COPY --from=vendor /app/vendor /app/vendor
+
+# Copy seluruh source code untuk generate autoloader yang lengkap
+COPY . .
+
+# Buat ulang bootstrap/cache directory (karena di-exclude di .dockerignore)
+RUN mkdir -p bootstrap/cache && chmod -R 775 bootstrap/cache
+
+# Regenerate autoloader dengan optimasi penuh
+RUN composer dump-autoload \
+    --optimize \
+    --classmap-authoritative \
+    --no-dev
+
+# --- Stage 3: Final Production Image ---
+FROM dunglas/frankenphp:php8.4
+
+# Install ekstensi yang dibutuhkan runtime
+RUN install-php-extensions \
+    pdo_pgsql \
+    gd \
+    intl \
+    zip \
+    bcmath \
+    opcache \
+    pcntl
+
+# Setup konfigurasi PHP Production
+COPY docker/php.ini $PHP_INI_DIR/conf.d/zz-custom.ini
+
+WORKDIR /app
+
+# Copy vendor dan autoloader yang sudah dioptimasi dari stage autoloader
+COPY --from=autoloader /app/vendor /app/vendor
+
+# Copy source code aplikasi (kecuali yang ada di .dockerignore)
+COPY . .
+
+# Buat ulang bootstrap/cache directory dan set permission
+RUN mkdir -p bootstrap/cache && \
+    chown -R www-data:www-data /app/storage /app/bootstrap/cache && \
+    chmod -R 775 /app/storage /app/bootstrap/cache
+
+# Environment variables dasar (akan di-override oleh docker-compose)
+ENV APP_ENV=production
+ENV APP_DEBUG=false
+
+# Script entrypoint untuk caching saat container start
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint
+RUN chmod +x /usr/local/bin/entrypoint
+
+ENTRYPOINT ["entrypoint"]
+CMD ["php", "artisan", "octane:frankenphp", "--host=0.0.0.0", "--port=8000", "--workers=auto", "--max-requests=1000"]

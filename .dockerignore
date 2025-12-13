@@ -1,3 +1,4 @@
+# .dockerignore
 /node_modules
 /public/hot
 /public/storage
@@ -8,3 +9,4 @@
 .phpunit.result.cache
 *.log
 .git
+/bootstrap/cache/*  # ← TAMBAHKAN INI
